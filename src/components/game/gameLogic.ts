@@ -37,75 +37,86 @@ export function dropBlock(
   const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
 
+  // dropCol — столбец броска, результат всегда остаётся в нём
+  const dropCol = col;
+
   let changed = true;
   while (changed) {
     changed = false;
 
-    // Вертикальные пары
+    // Вертикальные пары — ищем только в dropCol
     for (let r = 0; r < ROWS - 1; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const v = newGrid[r][c];
-        if (v === EMPTY) continue;
-        if (newGrid[r + 1][c] !== v) continue;
+      const c = dropCol;
+      const v = newGrid[r][c];
+      if (v === EMPTY) continue;
+      if (newGrid[r + 1][c] !== v) continue;
 
-        const sameRow: number[] = [c];
-        let lc = c - 1;
-        while (lc >= 0 && newGrid[r][lc] === v) { sameRow.unshift(lc); lc--; }
-        let rc = c + 1;
-        while (rc < COLS && newGrid[r][rc] === v) { sameRow.push(rc); rc++; }
+      // Собираем горизонтальных соседей с тем же значением в строке r
+      const sameRow: number[] = [c];
+      let lc = c - 1;
+      while (lc >= 0 && newGrid[r][lc] === v) { sameRow.unshift(lc); lc--; }
+      let rc = c + 1;
+      while (rc < COLS && newGrid[r][rc] === v) { sameRow.push(rc); rc++; }
 
-        const participants = sameRow.length + 1;
-        const resultValue = v * Math.pow(2, participants - 1);
-        if (resultValue > MAX_VALUE) continue;
+      const participants = sameRow.length + 1;
+      const resultValue = v * Math.pow(2, participants - 1);
+      if (resultValue > MAX_VALUE) break;
 
-        for (const sc of sameRow) newGrid[r][sc] = EMPTY;
-        newGrid[r + 1][c] = EMPTY;
+      // Убираем всех участников
+      for (const sc of sameRow) newGrid[r][sc] = EMPTY;
+      newGrid[r + 1][c] = EMPTY;
 
-        const targetCol = sameRow[0];
-        newGrid[r][targetCol] = resultValue;
+      // Результат — в dropCol (столбец броска)
+      newGrid[r][dropCol] = resultValue;
 
-        const pts = resultValue * participants;
-        scoreGained += pts;
-        mergedPositions.push([r, targetCol]);
-        mergeEvents.push({ row: r, col: targetCol, resultValue, participants, points: pts });
+      const pts = resultValue * participants;
+      scoreGained += pts;
+      mergedPositions.push([r, dropCol]);
+      mergeEvents.push({ row: r, col: dropCol, resultValue, participants, points: pts });
 
-        applyGravity(newGrid);
-        changed = true;
-        break;
-      }
-      if (changed) break;
+      applyGravity(newGrid);
+
+      // После гравитации dropCol мог сдвинуться — находим новую строку результата
+      // dropCol остаётся прежним, продолжаем искать пары в том же столбце
+      changed = true;
+      break;
     }
 
     if (changed) continue;
 
-    // Горизонтальные пары
+    // Горизонтальные пары — только если в dropCol есть пара с соседом
     for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS - 1; c++) {
-        const v = newGrid[r][c];
-        if (v === EMPTY) continue;
-        if (newGrid[r][c + 1] !== v) continue;
+      const c = dropCol;
+      const v = newGrid[r][c];
+      if (v === EMPTY) continue;
 
-        const group: number[] = [c];
-        let rc2 = c + 1;
-        while (rc2 < COLS && newGrid[r][rc2] === v) { group.push(rc2); rc2++; }
+      // Ищем горизонтальную группу, включающую dropCol
+      let groupStart = c;
+      while (groupStart > 0 && newGrid[r][groupStart - 1] === v) groupStart--;
+      let groupEnd = c;
+      while (groupEnd < COLS - 1 && newGrid[r][groupEnd + 1] === v) groupEnd++;
 
-        const participants = group.length;
-        const resultValue = v * Math.pow(2, participants - 1);
-        if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
+      if (groupEnd === groupStart) continue; // нет горизонтальных соседей
 
-        for (const gc of group) newGrid[r][gc] = EMPTY;
-        newGrid[r][group[0]] = resultValue;
+      const group: number[] = [];
+      for (let gc = groupStart; gc <= groupEnd; gc++) group.push(gc);
 
-        const pts2 = resultValue * participants;
-        scoreGained += pts2;
-        mergedPositions.push([r, group[0]]);
-        mergeEvents.push({ row: r, col: group[0], resultValue, participants, points: pts2 });
+      const participants = group.length;
+      const resultValue = v * Math.pow(2, participants - 1);
+      if (resultValue > MAX_VALUE) continue;
 
-        applyGravity(newGrid);
-        changed = true;
-        break;
-      }
-      if (changed) break;
+      for (const gc of group) newGrid[r][gc] = EMPTY;
+      // Результат — в dropCol
+      newGrid[r][dropCol] = resultValue;
+
+      const pts2 = resultValue * participants;
+      scoreGained += pts2;
+      mergedPositions.push([r, dropCol]);
+      mergeEvents.push({ row: r, col: dropCol, resultValue, participants, points: pts2 });
+
+      applyGravity(newGrid);
+      changed = true;
+      break;
     }
   }
 
