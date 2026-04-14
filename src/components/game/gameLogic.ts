@@ -53,20 +53,17 @@ export function dropBlock(
   const mergeEvents: MergeEvent[] = [];
   const steps: MergeStep[] = [];
 
-  // Шаг 0: блок упал, слияний ещё нет
-  steps.push({ grid: cloneGrid(newGrid), mergeEvent: null, slides: [] });
-
   // dropCol — столбец броска.
   // Правило: если слияние включает dropCol → результат в dropCol.
-  // Если слияние не включает dropCol → результат остаётся в столбце пары.
+  // Если слияние не включает dropCol → результат в ближайший к dropCol столбец пары.
   const dropCol = col;
+
+  // Шаг 0: блок упал, слияний ещё нет
+  steps.push({ grid: cloneGrid(newGrid), mergeEvent: null, slides: [] });
 
   let changed = true;
   while (changed) {
     changed = false;
-
-    // Гравитация перед каждой итерацией — блоки оседают после предыдущих слияний
-    applyGravity(newGrid);
 
     // Сканируем всё поле на вертикальные пары
     outer:
