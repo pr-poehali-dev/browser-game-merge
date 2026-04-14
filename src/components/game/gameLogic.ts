@@ -94,10 +94,13 @@ export function dropBlock(
         if (resultValue > MAX_VALUE) continue;
 
         // Определяем куда кладём результат:
-        // - если это первое слияние и пара включает dropCol → в dropCol
-        // - иначе → в столбец c (где нашли пару)
+        // - если пара включает dropCol → в dropCol
+        // - иначе → в ближайший к dropCol столбец среди участников
         const pairInvolvesDropCol = rowTop.includes(dropCol) || c === dropCol || rowBot.includes(dropCol);
-        const targetCol = pairInvolvesDropCol ? dropCol : c;
+        const allParticipantCols = [...rowTop, ...rowBot]; // все горизонтальные столбцы пары
+        const targetCol = pairInvolvesDropCol
+          ? dropCol
+          : allParticipantCols.reduce((best, pc) => Math.abs(pc - dropCol) < Math.abs(best - dropCol) ? pc : best, c);
 
         // Слайды: все участники летят к targetCol
         const slides1: SlideAnim[] = [];
@@ -144,7 +147,10 @@ export function dropBlock(
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
         const groupInvolvesDropCol = group.includes(dropCol);
-        const targetCol2 = groupInvolvesDropCol ? dropCol : group[0];
+        // Результат — в dropCol если он в группе, иначе в ближайший к dropCol столбец группы
+        const targetCol2 = groupInvolvesDropCol
+          ? dropCol
+          : group.reduce((best, gc) => Math.abs(gc - dropCol) < Math.abs(best - dropCol) ? gc : best, group[0]);
 
         const slides2: SlideAnim[] = group
           .filter(gc => gc !== targetCol2)
