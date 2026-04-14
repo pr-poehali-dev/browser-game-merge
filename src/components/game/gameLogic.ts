@@ -1,4 +1,4 @@
-import { COLS, ROWS, EMPTY, MAX_VALUE, SPAWN_VALUES, Grid, MergeEvent } from "./gameTypes";
+import { COLS, ROWS, EMPTY, MAX_VALUE, SPAWN_VALUES, Grid, MergeEvent, MergeStep } from "./gameTypes";
 
 export function emptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
@@ -37,20 +37,24 @@ function placeInCol(grid: Grid, col: number, value: number): number {
 
 export function dropBlock(
   grid: Grid, col: number, value: number
-): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number, number][]; mergeEvents: MergeEvent[] } {
+): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number, number][]; mergeEvents: MergeEvent[]; steps: MergeStep[] } {
   const newGrid = cloneGrid(grid);
 
   let row = -1;
   for (let r = 0; r < ROWS; r++) {
     if (newGrid[r][col] === EMPTY) { row = r; break; }
   }
-  if (row === -1) return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [] };
+  if (row === -1) return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [], steps: [] };
 
   newGrid[row][col] = value;
 
   let scoreGained = 0;
   const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
+  const steps: MergeStep[] = [];
+
+  // Шаг 0: блок упал, слияний ещё нет
+  steps.push({ grid: cloneGrid(newGrid), mergeEvent: null });
 
   // dropCol — столбец броска, результат всегда остаётся в нём
   const dropCol = col;
@@ -100,8 +104,10 @@ export function dropBlock(
 
         const pts = resultValue * participants;
         scoreGained += pts;
+        const ev1: MergeEvent = { row: destRow, col: dropCol, resultValue, participants, points: pts };
         mergedPositions.push([destRow, dropCol]);
-        mergeEvents.push({ row: destRow, col: dropCol, resultValue, participants, points: pts });
+        mergeEvents.push(ev1);
+        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev1 });
 
         changed = true;
         break outer;
@@ -138,8 +144,10 @@ export function dropBlock(
 
         const pts2 = resultValue * participants;
         scoreGained += pts2;
+        const ev2: MergeEvent = { row: destRow2, col: dropCol, resultValue, participants, points: pts2 };
         mergedPositions.push([destRow2, dropCol]);
-        mergeEvents.push({ row: destRow2, col: dropCol, resultValue, participants, points: pts2 });
+        mergeEvents.push(ev2);
+        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev2 });
 
         changed = true;
         break outer2;
@@ -147,7 +155,7 @@ export function dropBlock(
     }
   }
 
-  return { newGrid, scoreGained, placed: true, landRow: row, mergedPositions, mergeEvents };
+  return { newGrid, scoreGained, placed: true, landRow: row, mergedPositions, mergeEvents, steps };
 }
 
 export function isBoardFull(grid: Grid): boolean {

@@ -1,32 +1,39 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { COLS, ROWS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, PendingResult } from "./game/gameTypes";
+import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent } from "./game/gameTypes";
 import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull } from "./game/gameLogic";
 import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
 type Snapshot = { grid: Grid; score: number; current: number; next: number };
 
-let flyId = 0;
-let explId = 0;
+const FLY_MS   = 320; // длительность полёта блока
+const MERGE_MS = 380; // длительность одного шага слияния
+
+let flyId   = 0;
+let explId  = 0;
 let popupId = 0;
 
 export default function MergeGame() {
-  const [grid, setGrid] = useState<Grid>(emptyGrid);
-  const [score, setScore] = useState(0);
-  const [best, setBest] = useState<number>(() =>
+  const [grid, setGrid]               = useState<Grid>(emptyGrid);
+  const [score, setScore]             = useState(0);
+  const [best, setBest]               = useState<number>(() =>
     parseInt(localStorage.getItem("merge_best") ?? "0", 10)
   );
-  const [current, setCurrent] = useState<number>(randomValue);
-  const [next, setNext] = useState<number>(randomValue);
-  const [hoverCol, setHoverCol] = useState<number | null>(null);
-  const [history, setHistory] = useState<Snapshot[]>([]);
-  const [gameOver, setGameOver] = useState(false);
+  const [current, setCurrent]         = useState<number>(randomValue);
+  const [next, setNext]               = useState<number>(randomValue);
+  const [hoverCol, setHoverCol]       = useState<number | null>(null);
+  const [history, setHistory]         = useState<Snapshot[]>([]);
+  const [gameOver, setGameOver]       = useState(false);
   const [flyingBlocks, setFlyingBlocks] = useState<FlyingBlock[]>([]);
-  const [explosions, setExplosions] = useState<Explosion[]>([]);
+  const [explosions, setExplosions]   = useState<Explosion[]>([]);
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
+  const [busy, setBusy]               = useState(false); // блокируем ввод во время анимации
 
-  const pendingRef = useRef<PendingResult | null>(null);
-  const animCountRef = useRef(0);
-  const prevBest = useRef(best);
+  const prevBest    = useRef(best);
+  const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
+  const totalScoreRef = useRef(0);                // накопленный счёт для финала
+  const finalGridRef  = useRef<Grid | null>(null);
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const boardPx = COLS * CELL_SIZE + (COLS - 1) * GAP;
 
   useEffect(() => {
@@ -37,68 +44,103 @@ export default function MergeGame() {
     }
   }, [score, best]);
 
-  const applyPending = useCallback(() => {
-    const p = pendingRef.current;
-    if (!p) return;
-    pendingRef.current = null;
+  // Показать взрыв и попап для события слияния
+  const showMergeEffects = useCallback((ev: MergeEvent) => {
+    const style = getBlockStyle(ev.resultValue);
+    const x = BOARD_PAD + ev.col * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+    const y = BOARD_PAD + ev.row * (CELL_SIZE + GAP) + CELL_SIZE / 2;
 
-    setGrid(p.newGrid);
-    setScore(p.newScore);
+    const expId = ++explId;
+    setExplosions((prev) => [...prev, { id: expId, x, y, color: style.glow }]);
+    setTimeout(() => setExplosions((prev) => prev.filter((e) => e.id !== expId)), 500);
 
-    if (p.scoreGained > 0 && p.mergedPositions.length > 0) {
-      const newExplosions: Explosion[] = p.mergedPositions.map(([r, c]) => {
-        const val = p.newGrid[r][c];
-        const style = getBlockStyle(val);
-        return {
-          id: ++explId,
-          x: BOARD_PAD + c * (CELL_SIZE + GAP) + CELL_SIZE / 2,
-          y: BOARD_PAD + r * (CELL_SIZE + GAP) + CELL_SIZE / 2,
-          color: style.glow,
-        };
-      });
-      setExplosions((prev) => [...prev, ...newExplosions]);
-      setTimeout(() => {
-        setExplosions((prev) => prev.filter((e) => !newExplosions.find((n) => n.id === e.id)));
-      }, 500);
-
-      const newPopups: ScorePopup[] = p.mergeEvents.map((ev) => {
-        const style = getBlockStyle(ev.resultValue);
-        return {
-          id: ++popupId,
-          x: BOARD_PAD + ev.col * (CELL_SIZE + GAP) + CELL_SIZE / 2,
-          y: BOARD_PAD + ev.row * (CELL_SIZE + GAP) + CELL_SIZE / 2,
-          points: ev.points,
-          multiplier: ev.participants,
-          color: style.text,
-        };
-      });
-      setScorePopups((prev) => [...prev, ...newPopups]);
-      setTimeout(() => {
-        setScorePopups((prev) => prev.filter((sp) => !newPopups.find((n) => n.id === sp.id)));
-      }, 800);
-    }
-
-    if (isBoardFull(p.newGrid)) {
-      setGameOver(true);
-      if (p.newScore > prevBest.current) {
-        setBest(p.newScore);
-        localStorage.setItem("merge_best", String(p.newScore));
-        prevBest.current = p.newScore;
-      }
-    }
+    const ppId = ++popupId;
+    setScorePopups((prev) => [...prev, { id: ppId, x, y, points: ev.points, multiplier: ev.participants, color: style.text }]);
+    setTimeout(() => setScorePopups((prev) => prev.filter((p) => p.id !== ppId)), 800);
   }, []);
 
+  // Проигрываем следующий шаг из очереди
+  const playNextStep = useCallback(() => {
+    const step = stepsRef.current.shift();
+    if (!step) {
+      // Все шаги сыграны — финализируем
+      const finalGrid = finalGridRef.current!;
+      const finalScore = totalScoreRef.current;
+      setGrid(finalGrid);
+      setScore(finalScore);
+      setBusy(false);
+
+      if (isBoardFull(finalGrid)) {
+        setGameOver(true);
+        if (finalScore > prevBest.current) {
+          setBest(finalScore);
+          localStorage.setItem("merge_best", String(finalScore));
+          prevBest.current = finalScore;
+        }
+      }
+      return;
+    }
+
+    // Показываем состояние поля этого шага
+    setGrid(step.grid);
+
+    // Если на этом шаге было слияние — показываем эффекты
+    if (step.mergeEvent) {
+      showMergeEffects(step.mergeEvent);
+      // Обновляем промежуточный счёт
+      setScore((s) => s + step.mergeEvent!.points);
+    }
+
+    // Планируем следующий шаг
+    timerRef.current = setTimeout(playNextStep, MERGE_MS);
+  }, [showMergeEffects]);
+
+  // Когда летящий блок долетел
   const handleFlyDone = useCallback((id: number) => {
     setFlyingBlocks((prev) => prev.filter((b) => b.id !== id));
-    animCountRef.current -= 1;
-    if (animCountRef.current <= 0) {
-      animCountRef.current = 0;
-      applyPending();
-    }
-  }, [applyPending]);
+    // Запускаем цепочку шагов слияния
+    playNextStep();
+  }, [playNextStep]);
+
+  const handleDrop = useCallback(
+    (col: number) => {
+      if (gameOver || busy) return;
+
+      const { newGrid, scoreGained, placed, landRow, mergeEvents, steps } = dropBlock(grid, col, current);
+      if (!placed) return;
+
+      setBusy(true);
+      setHistory((h) => [...h.slice(-19), { grid: cloneGrid(grid), score, current, next }]);
+
+      // Сразу меняем current/next — игрок видит следующий блок
+      setCurrent(next);
+      setNext(randomValue());
+
+      // Готовим очередь шагов (всё кроме шага 0 — он покажется после посадки)
+      // steps[0] — состояние после посадки (без слияния), steps[1..] — каждое слияние
+      stepsRef.current = steps.slice(1); // шаг 0 покажем сразу при посадке
+      totalScoreRef.current = score + scoreGained;
+      finalGridRef.current = newGrid;
+
+      // Показываем состояние "блок только упал" сразу (steps[0])
+      if (steps.length > 0) setGrid(steps[0].grid);
+
+      // Запускаем летящий блок
+      const fid = ++flyId;
+      setFlyingBlocks((prev) => [...prev, { id: fid, value: current, col, targetRow: landRow }]);
+
+      // Если слияний не будет — финализируем сразу после полёта
+      if (mergeEvents.length === 0) {
+        stepsRef.current = [];
+      }
+    },
+    [gameOver, busy, grid, score, current, next]
+  );
 
   const handleUndo = useCallback(() => {
-    if (history.length === 0) return;
+    if (history.length === 0 || busy) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    stepsRef.current = [];
     const prev = history[history.length - 1];
     setHistory((h) => h.slice(0, -1));
     setGrid(prev.grid);
@@ -109,31 +151,12 @@ export default function MergeGame() {
     setFlyingBlocks([]);
     setExplosions([]);
     setScorePopups([]);
-    animCountRef.current = 0;
-    pendingRef.current = null;
-  }, [history]);
-
-  const handleDrop = useCallback(
-    (col: number) => {
-      if (gameOver) return;
-      const { newGrid, scoreGained, placed, landRow, mergedPositions, mergeEvents } = dropBlock(grid, col, current);
-      if (!placed) return;
-
-      setHistory((h) => [...h.slice(-19), { grid: cloneGrid(grid), score, current, next }]);
-
-      setCurrent(next);
-      setNext(randomValue());
-
-      pendingRef.current = { newGrid, scoreGained, newScore: score + scoreGained, mergedPositions, mergeEvents };
-
-      const fid = ++flyId;
-      animCountRef.current += 1;
-      setFlyingBlocks((prev) => [...prev, { id: fid, value: current, col, targetRow: landRow }]);
-    },
-    [gameOver, grid, score, current, next]
-  );
+    setBusy(false);
+  }, [history, busy]);
 
   const handleRestart = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    stepsRef.current = [];
     setGrid(emptyGrid());
     setScore(0);
     setCurrent(randomValue());
@@ -143,8 +166,7 @@ export default function MergeGame() {
     setFlyingBlocks([]);
     setExplosions([]);
     setScorePopups([]);
-    animCountRef.current = 0;
-    pendingRef.current = null;
+    setBusy(false);
   }, []);
 
   const handleHardRefresh = useCallback(() => {
@@ -155,17 +177,15 @@ export default function MergeGame() {
     }
   }, []);
 
-  const displayGrid = pendingRef.current ? pendingRef.current.newGrid : grid;
-
   return (
     <div style={{ minHeight: "100dvh", background: "#F3EFE9", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden" }}>
 
-      <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0} boardPx={boardPx} />
+      <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
       <GamePreview current={current} next={next} boardPx={boardPx} />
 
       <GameBoard
-        displayGrid={displayGrid}
+        displayGrid={grid}
         flyingBlocks={flyingBlocks}
         explosions={explosions}
         scorePopups={scorePopups}

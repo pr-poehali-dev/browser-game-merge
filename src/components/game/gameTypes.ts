@@ -29,10 +29,17 @@ export type Explosion = { id: number; x: number; y: number; color: string };
 export type ScorePopup = { id: number; x: number; y: number; points: number; multiplier: number; color: string };
 export type MergeEvent = { row: number; col: number; resultValue: number; participants: number; points: number };
 
+// Один шаг анимации: состояние поля + событие слияния на этом шаге
+export type MergeStep = {
+  grid: Grid;
+  mergeEvent: MergeEvent | null; // null = просто упал блок (без слияния)
+};
+
 export type PendingResult = {
   newGrid: Grid;
   scoreGained: number;
   newScore: number;
   mergedPositions: [number, number][];
   mergeEvents: MergeEvent[];
+  steps: MergeStep[]; // пошаговые снимки для анимации
 };
