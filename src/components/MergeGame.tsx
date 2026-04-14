@@ -30,13 +30,15 @@ export default function MergeGame() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [slideBlocks, setSlideBlocks] = useState<(SlideAnim & { id: number })[]>([]);
   const [busy, setBusy]               = useState(false);
-  const [liveMerges, setLiveMerges]   = useState(0); // живой счётчик объединений за ход
-  const [lastScore, setLastScore]     = useState(0); // очки последнего завершённого хода
+  const [liveMerges, setLiveMerges]   = useState(0); // живой счётчик объединений (во время хода)
+  const [lastMerges, setLastMerges]   = useState(0); // объединений в завершённом ходе
+  const [lastScore, setLastScore]     = useState(0); // очки завершённого хода
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
   const totalScoreRef = useRef(0);                // накопленный счёт для финала
   const prevScoreRef  = useRef(0);                // счёт до начала хода
+  const liveMergesRef = useRef(0);               // ref для доступа в колбэках
   const finalGridRef  = useRef<Grid | null>(null);
   const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,8 +81,11 @@ export default function MergeGame() {
       setGrid(finalGrid);
       setScore(finalScore);
       setSlideBlocks([]);
-      // Сохраняем очки хода и сбрасываем счётчик
-      setLastScore(finalScore - prevScoreRef.current); // очки добавленные за этот ход
+      // Сохраняем результат хода — формула остаётся видна до следующего броска
+      const gained = finalScore - prevScoreRef.current;
+      setLastScore(gained);
+      setLastMerges(liveMergesRef.current); // сохраняем кол-во объединений
+      liveMergesRef.current = 0;
       setLiveMerges(0);
       setBusy(false);
 
@@ -105,7 +110,8 @@ export default function MergeGame() {
         setGrid(step.grid);
         if (step.mergeEvent) {
           showMergeEffects(step.mergeEvent);
-          setLiveMerges((prev) => prev + 1);
+          liveMergesRef.current += 1;
+          setLiveMerges(liveMergesRef.current);
           if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
         }
         timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -114,7 +120,8 @@ export default function MergeGame() {
       setGrid(step.grid);
       if (step.mergeEvent) {
         showMergeEffects(step.mergeEvent);
-        setLiveMerges((prev) => prev + 1);
+        liveMergesRef.current += 1;
+        setLiveMerges(liveMergesRef.current);
         if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
       }
       timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -149,6 +156,8 @@ export default function MergeGame() {
       prevScoreRef.current = score; // запомним счёт до хода
       finalGridRef.current = newGrid;
       setLastScore(0); // сбрасываем предыдущий результат при новом броске
+      setLastMerges(0);
+      liveMergesRef.current = 0;
 
       // Показываем состояние "блок только упал" сразу (steps[0])
       if (steps.length > 0) setGrid(steps[0].grid);
@@ -214,7 +223,7 @@ export default function MergeGame() {
 
       <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
-      <GamePreview current={current} next={next} boardPx={boardPx} liveMerges={liveMerges} lastScore={lastScore} />
+      <GamePreview current={current} next={next} boardPx={boardPx} liveMerges={liveMerges} lastScore={lastScore} lastMerges={lastMerges} />
 
       <GameBoard
         displayGrid={grid}

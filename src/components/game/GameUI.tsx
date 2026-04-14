@@ -68,54 +68,52 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
 }
 
 // ---- Превью текущего и следующего ----
-export function GamePreview({ current, next, boardPx, liveMerges, lastScore }: {
-  current: number; next: number; boardPx: number; liveMerges: number; lastScore: number;
+export function GamePreview({ current, next, boardPx, liveMerges, lastScore, lastMerges }: {
+  current: number; next: number; boardPx: number; liveMerges: number; lastScore: number; lastMerges: number;
 }) {
-  // N — объединений, итог = N×N
-  const n = liveMerges > 0 ? liveMerges : 0;
-  const liveResult = n * n;
-  const showScore = liveMerges > 0 || lastScore > 0;
+  // Что показывать: живой счётчик или результат предыдущего хода
+  const isLive = liveMerges > 0;
+  const n = isLive ? liveMerges : lastMerges;
+  const result = n * n;
+  const showFormula = n >= 2;
+  const showPlus1 = n === 1;
+  const show = isLive ? n >= 1 : lastScore > 0;
 
-  // Цвет зависит от множителя
-  const accentColor = n >= 7 ? "#FFD700" : n >= 5 ? "#FF8C00" : n >= 3 ? "#fff" : "rgba(255,255,255,0.75)";
+  const accentColor = isLive
+    ? (n >= 7 ? "#FFD700" : n >= 5 ? "#FF8C00" : "#fff")
+    : "rgba(255,255,255,0.55)";
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10, width: boardPx + BOARD_PAD * 2 }}>
 
       {/* Счёт слева */}
-      <div style={{ minWidth: 72, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
-        {showScore && liveMerges > 0 && n >= 2 && (
-          // Живой: показываем N × N = итог
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", animation: "blockAppear 0.15s ease" }}>
-            {/* Формула */}
+      <div style={{ minWidth: 80, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
+        {show && showFormula && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", animation: isLive ? "blockAppear 0.15s ease" : undefined }}>
+            {/* N × N = итог */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                {n}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", margin: "0 1px" }}>×</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: accentColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                {n}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", margin: "0 2px" }}>=</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>
-                {liveResult}
-              </span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{n}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.5)", margin: "0 2px" }}>×</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{n}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>=</span>
+              <span style={{ fontSize: 24, fontWeight: 900, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{result}</span>
             </div>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", fontWeight: 500, marginTop: 2, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 500, marginTop: 3, letterSpacing: "0.06em", textTransform: "uppercase" }}>
               объединений
             </span>
           </div>
         )}
-        {showScore && liveMerges === 1 && (
-          <div style={{ animation: "blockAppear 0.15s ease" }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.8)", letterSpacing: "-0.02em" }}>+1</span>
-          </div>
-        )}
-        {!liveMerges && lastScore > 0 && (
-          // После хода: показываем итог
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", opacity: 0.65 }}>
-            <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
-              +{lastScore}
+        {show && showPlus1 && (
+          <div style={{ animation: isLive ? "blockAppear 0.15s ease" : undefined }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>×</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>=</span>
+              <span style={{ fontSize: 24, fontWeight: 900, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
+            </div>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 500, marginTop: 3, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", textAlign: "right" }}>
+              объединений
             </span>
           </div>
         )}
