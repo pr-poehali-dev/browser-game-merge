@@ -40,8 +40,8 @@ export function NextBlock({ value }: { value: number }) {
 }
 
 // ---- Шапка ----
-export function GameHeader({ score, best, onRefresh, boardPx }: {
-  score: number; best: number; onRefresh: () => void; boardPx: number;
+export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }: {
+  score: number; best: number; onRefresh: () => void; onUndo: () => void; canUndo: boolean; boardPx: number;
 }) {
   return (
     <div style={{ width: "100%", maxWidth: boardPx + BOARD_PAD * 2 + 16, padding: "10px 8px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, boxSizing: "border-box" }}>
@@ -56,6 +56,9 @@ export function GameHeader({ score, best, onRefresh, boardPx }: {
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, minWidth: 60, justifyContent: "flex-end" }}>
+        <ActionBtn onClick={onUndo} disabled={!canUndo} title="Отменить ход" small>
+          <Icon name="Undo2" size={13} />
+        </ActionBtn>
         <ActionBtn onClick={onRefresh} title="Обновить кэш" small>
           <Icon name="RefreshCcw" size={13} />
         </ActionBtn>

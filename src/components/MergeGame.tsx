@@ -3,6 +3,8 @@ import { COLS, ROWS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock
 import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull } from "./game/gameLogic";
 import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
+type Snapshot = { grid: Grid; score: number; current: number; next: number };
+
 let flyId = 0;
 let explId = 0;
 let popupId = 0;
@@ -16,6 +18,7 @@ export default function MergeGame() {
   const [current, setCurrent] = useState<number>(randomValue);
   const [next, setNext] = useState<number>(randomValue);
   const [hoverCol, setHoverCol] = useState<number | null>(null);
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [gameOver, setGameOver] = useState(false);
   const [flyingBlocks, setFlyingBlocks] = useState<FlyingBlock[]>([]);
   const [explosions, setExplosions] = useState<Explosion[]>([]);
@@ -94,11 +97,29 @@ export default function MergeGame() {
     }
   }, [applyPending]);
 
+  const handleUndo = useCallback(() => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setHistory((h) => h.slice(0, -1));
+    setGrid(prev.grid);
+    setScore(prev.score);
+    setCurrent(prev.current);
+    setNext(prev.next);
+    setGameOver(false);
+    setFlyingBlocks([]);
+    setExplosions([]);
+    setScorePopups([]);
+    animCountRef.current = 0;
+    pendingRef.current = null;
+  }, [history]);
+
   const handleDrop = useCallback(
     (col: number) => {
       if (gameOver) return;
       const { newGrid, scoreGained, placed, landRow, mergedPositions, mergeEvents } = dropBlock(grid, col, current);
       if (!placed) return;
+
+      setHistory((h) => [...h.slice(-19), { grid: cloneGrid(grid), score, current, next }]);
 
       setCurrent(next);
       setNext(randomValue());
@@ -117,6 +138,7 @@ export default function MergeGame() {
     setScore(0);
     setCurrent(randomValue());
     setNext(randomValue());
+    setHistory([]);
     setGameOver(false);
     setFlyingBlocks([]);
     setExplosions([]);
@@ -138,7 +160,7 @@ export default function MergeGame() {
   return (
     <div style={{ minHeight: "100dvh", background: "#F3EFE9", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden" }}>
 
-      <GameHeader score={score} best={best} onRefresh={handleHardRefresh} boardPx={boardPx} />
+      <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0} boardPx={boardPx} />
 
       <GamePreview current={current} next={next} boardPx={boardPx} />
 

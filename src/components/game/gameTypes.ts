@@ -1,4 +1,4 @@
-export const COLS = 6;
+export const COLS = 5;
 export const ROWS = 8;
 export const EMPTY = 0;
 export const MAX_VALUE = 512;
