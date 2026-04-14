@@ -30,6 +30,7 @@ export default function MergeGame() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [slideBlocks, setSlideBlocks] = useState<(SlideAnim & { id: number })[]>([]);
   const [busy, setBusy]               = useState(false);
+  const [liveBlocks, setLiveBlocks]   = useState(0); // живой счётчик объединённых блоков за ход
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
@@ -76,6 +77,7 @@ export default function MergeGame() {
       setGrid(finalGrid);
       setScore(finalScore);
       setSlideBlocks([]);
+      setLiveBlocks(0); // сброс счётчика
       setBusy(false);
 
       if (isBoardFull(finalGrid)) {
@@ -99,7 +101,7 @@ export default function MergeGame() {
         setGrid(step.grid);
         if (step.mergeEvent) {
           showMergeEffects(step.mergeEvent);
-          // Очки начисляем только если это последнее слияние (points > 0)
+          setLiveBlocks((prev) => prev + step.mergeEvent!.participants);
           if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
         }
         timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -108,6 +110,7 @@ export default function MergeGame() {
       setGrid(step.grid);
       if (step.mergeEvent) {
         showMergeEffects(step.mergeEvent);
+        setLiveBlocks((prev) => prev + step.mergeEvent!.participants);
         if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
       }
       timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -171,6 +174,7 @@ export default function MergeGame() {
     setExplosions([]);
     setScorePopups([]);
     setSlideBlocks([]);
+    setLiveBlocks(0);
     setBusy(false);
   }, [history, busy]);
 
@@ -187,6 +191,7 @@ export default function MergeGame() {
     setExplosions([]);
     setScorePopups([]);
     setSlideBlocks([]);
+    setLiveBlocks(0);
     setBusy(false);
   }, []);
 
@@ -204,6 +209,33 @@ export default function MergeGame() {
       <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
       <GamePreview current={current} next={next} boardPx={boardPx} />
+
+      {/* Живой счётчик множителя */}
+      {liveBlocks > 0 && (
+        <div style={{
+          marginTop: 8,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "6px 16px",
+          background: "rgba(0,0,0,0.15)",
+          borderRadius: 20,
+          animation: "blockAppear 0.15s ease",
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", opacity: 0.8 }}>
+            блоков: <b>{liveBlocks}</b>
+          </span>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>→</span>
+          <span style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: liveBlocks >= 7 ? "#FFD700" : liveBlocks >= 5 ? "#FFA500" : "#fff",
+            letterSpacing: "-0.02em",
+          }}>
+            {liveBlocks <= 1 ? 0 : liveBlocks === 2 ? 1 : Math.pow(2, liveBlocks - 1)} очков
+          </span>
+        </div>
+      )}
 
       <GameBoard
         displayGrid={grid}
