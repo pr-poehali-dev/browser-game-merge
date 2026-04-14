@@ -5,8 +5,9 @@ import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
 type Snapshot = { grid: Grid; score: number; current: number; next: number };
 
-const FLY_MS   = 320; // длительность полёта блока
-const MERGE_MS = 380; // длительность одного шага слияния
+const FLY_MS    = 320; // длительность полёта блока
+const SLIDE_MS  = 420; // длительность скольжения блока к цели
+const PAUSE_MS  = 250; // пауза после слияния перед следующим шагом
 
 let flyId    = 0;
 let explId   = 0;
@@ -88,7 +89,7 @@ export default function MergeGame() {
     if (step.slides && step.slides.length > 0) {
       const newSlides = step.slides.map(sl => ({ ...sl, id: ++slideId }));
       setSlideBlocks(newSlides);
-      // Через SLIDE_MS убираем слайды и показываем финальное поле шага
+      // Ждём завершения скольжения, потом показываем результат слияния
       timerRef.current = setTimeout(() => {
         setSlideBlocks([]);
         setGrid(step.grid);
@@ -96,8 +97,9 @@ export default function MergeGame() {
           showMergeEffects(step.mergeEvent);
           setScore((s) => s + step.mergeEvent!.points);
         }
-        timerRef.current = setTimeout(playNextStep, MERGE_MS);
-      }, 260);
+        // Пауза чтобы игрок увидел результат перед следующим шагом
+        timerRef.current = setTimeout(playNextStep, PAUSE_MS);
+      }, SLIDE_MS);
     } else {
       // Нет слайдов — сразу показываем поле
       setGrid(step.grid);
@@ -105,7 +107,7 @@ export default function MergeGame() {
         showMergeEffects(step.mergeEvent);
         setScore((s) => s + step.mergeEvent!.points);
       }
-      timerRef.current = setTimeout(playNextStep, MERGE_MS);
+      timerRef.current = setTimeout(playNextStep, PAUSE_MS);
     }
   }, [showMergeEffects]);
 

@@ -54,18 +54,19 @@ export function SlideBlock({ sl, id, onDone }: { sl: SlideAnim; id: number; onDo
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const fromX = BOARD_PAD + sl.fromCol * (CELL_SIZE + GAP);
-    const toX   = BOARD_PAD + sl.toCol   * (CELL_SIZE + GAP);
+    const fromX  = BOARD_PAD + sl.fromCol * (CELL_SIZE + GAP);
+    const toX    = BOARD_PAD + sl.toCol   * (CELL_SIZE + GAP);
     const deltaX = toX - fromX;
-    const fromY = BOARD_PAD + sl.fromRow * (CELL_SIZE + GAP);
-    const toY   = BOARD_PAD + sl.toRow   * (CELL_SIZE + GAP);
+    const fromY  = BOARD_PAD + sl.fromRow * (CELL_SIZE + GAP);
+    const toY    = BOARD_PAD + sl.toRow   * (CELL_SIZE + GAP);
     const deltaY = toY - fromY;
     const anim = el.animate(
       [
-        { transform: `translate(0px, 0px)`, opacity: "1" },
-        { transform: `translate(${deltaX}px, ${deltaY}px)`, opacity: "0.85" },
+        { transform: `translate(0px, 0px) scale(1.08)`,             opacity: "1"  },
+        { transform: `translate(${deltaX * 0.5}px, ${deltaY * 0.5}px) scale(1.12)`, opacity: "1", offset: 0.4 },
+        { transform: `translate(${deltaX}px, ${deltaY}px) scale(1)`, opacity: "1"  },
       ],
-      { duration: 280, easing: "cubic-bezier(0.34,1.2,0.64,1)", fill: "forwards" }
+      { duration: 420, easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)", fill: "forwards" }
     );
     anim.onfinish = () => onDone(id);
     return () => anim.cancel();
@@ -76,8 +77,14 @@ export function SlideBlock({ sl, id, onDone }: { sl: SlideAnim; id: number; onDo
   const startTop  = BOARD_PAD + sl.fromRow * (CELL_SIZE + GAP);
 
   return (
-    <div ref={ref} style={{ position: "absolute", left: startLeft, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 22, pointerEvents: "none" }}>
-      <div style={{ width: "100%", height: "100%", borderRadius: 10, background: s.bg, border: `2px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 16px ${s.glow}88` }}>
+    <div ref={ref} style={{ position: "absolute", left: startLeft, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 25, pointerEvents: "none" }}>
+      <div style={{
+        width: "100%", height: "100%", borderRadius: 10,
+        background: s.bg,
+        border: `2.5px solid ${s.glow}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: `0 0 18px 4px ${s.glow}99, 0 4px 12px rgba(0,0,0,0.18)`,
+      }}>
         <BlockLabel value={sl.value} color={s.text} />
       </div>
     </div>
