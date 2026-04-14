@@ -10,7 +10,7 @@ export function ActionBtn({ onClick, disabled, title, children, small }: {
   const sz = small ? 28 : 34;
   return (
     <button onClick={onClick} disabled={disabled} title={title}
-      style={{ width: sz, height: sz, borderRadius: 8, border: "none", background: disabled ? "#EAE3DA" : "#E0D8CE", color: disabled ? "#C5BDB5" : "#4A3F35", display: "flex", alignItems: "center", justifyContent: "center", cursor: disabled ? "default" : "pointer", transition: "background 0.12s, transform 0.1s", fontFamily: "'Rubik', sans-serif" }}
+      style={{ width: sz, height: sz, borderRadius: 8, border: "none", background: disabled ? "#A0A0A0" : "#888", color: disabled ? "#C8C8C8" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: disabled ? "default" : "pointer", transition: "background 0.12s, transform 0.1s", fontFamily: "'Rubik', sans-serif" }}
       onMouseDown={(e) => !disabled && (e.currentTarget.style.transform = "scale(0.88)")}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
@@ -33,8 +33,8 @@ export function BigCurrentBlock({ value }: { value: number }) {
 export function NextBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
-    <div key={value} style={{ width: 36, height: 36, borderRadius: 9, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.45, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      <span style={{ fontSize: value >= 100 ? 11 : 16, fontWeight: 700, color: s.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>
+    <div key={value} style={{ width: 26, height: 26, borderRadius: 7, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.55, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
+      <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: s.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>
     </div>
   );
 }
@@ -46,12 +46,12 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
   return (
     <div style={{ width: "100%", maxWidth: boardPx + BOARD_PAD * 2 + 16, padding: "10px 8px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, boxSizing: "border-box" }}>
       <div style={{ minWidth: 60 }}>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#B5ADA5", textTransform: "uppercase", marginBottom: 1 }}>Рекорд</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#7A6E65", lineHeight: 1 }}>{best.toLocaleString("ru")}</div>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#777", textTransform: "uppercase", marginBottom: 1 }}>Рекорд</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#222", lineHeight: 1 }}>{best.toLocaleString("ru")}</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#B5ADA5", textTransform: "uppercase", marginBottom: 1 }}>Очки</div>
-        <div key={score} style={{ fontSize: 20, fontWeight: 700, color: "#2C2017", lineHeight: 1, animation: "scorePop 0.22s ease" }}>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#777", textTransform: "uppercase", marginBottom: 1 }}>Очки</div>
+        <div key={score} style={{ fontSize: 20, fontWeight: 700, color: "#111", lineHeight: 1, animation: "scorePop 0.22s ease" }}>
           {score.toLocaleString("ru")}
         </div>
       </div>

@@ -196,7 +196,7 @@ export default function MergeGame() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#F3EFE9", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden" }}>
+    <div style={{ minHeight: "100dvh", background: "#B8B8B8", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden" }}>
 
       <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
