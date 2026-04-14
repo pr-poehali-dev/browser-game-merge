@@ -56,7 +56,8 @@ export function dropBlock(
 
   newGrid[row][col] = value;
 
-  let scoreGained = 0;
+  // Очки: кол-во слияний за ход = N, итог = N * N
+  const counter = { merges: 0 };
   const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
   const steps: MergeStep[] = [];
@@ -120,9 +121,8 @@ export function dropBlock(
 
         const destRow = placeInCol(newGrid, targetCol, resultValue);
 
-        const pts = resultValue * participants;
-        scoreGained += pts;
-        const ev1: MergeEvent = { row: destRow, col: targetCol, resultValue, participants, points: pts };
+        counter.merges += 1;
+        const ev1: MergeEvent = { row: destRow, col: targetCol, resultValue, participants, points: 0 };
         mergedPositions.push([destRow, targetCol]);
         mergeEvents.push(ev1);
         steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev1, slides: slides1 });
@@ -163,9 +163,8 @@ export function dropBlock(
         for (const gc of group) newGrid[r][gc] = EMPTY;
         const destRow2 = placeInCol(newGrid, targetCol2, resultValue);
 
-        const pts2 = resultValue * participants;
-        scoreGained += pts2;
-        const ev2: MergeEvent = { row: destRow2, col: targetCol2, resultValue, participants, points: pts2 };
+        counter.merges += 1;
+        const ev2: MergeEvent = { row: destRow2, col: targetCol2, resultValue, participants, points: 0 };
         mergedPositions.push([destRow2, targetCol2]);
         mergeEvents.push(ev2);
         steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev2, slides: slides2 });
@@ -176,7 +175,17 @@ export function dropBlock(
     }
   }
 
-  return { newGrid, scoreGained, placed: true, landRow: row, mergedPositions, mergeEvents, steps };
+  // Итоговые очки: N слияний = N * N
+  const n = counter.merges;
+  const totalScore = n * n;
+
+  // Распределяем очки по событиям (для всплывающих попапов)
+  mergeEvents.forEach((ev, i) => {
+    // Последнее слияние показывает все очки с множителем, остальные — 0
+    (ev as { points: number }).points = i === mergeEvents.length - 1 ? totalScore : 0;
+  });
+
+  return { newGrid, scoreGained: totalScore, placed: true, landRow: row, mergedPositions, mergeEvents, steps };
 }
 
 export function isBoardFull(grid: Grid): boolean {

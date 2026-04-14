@@ -57,9 +57,13 @@ export default function MergeGame() {
     setExplosions((prev) => [...prev, { id: expId, x, y, color: style.glow }]);
     setTimeout(() => setExplosions((prev) => prev.filter((e) => e.id !== expId)), 500);
 
-    const ppId = ++popupId;
-    setScorePopups((prev) => [...prev, { id: ppId, x, y, points: ev.points, multiplier: ev.participants, color: style.text }]);
-    setTimeout(() => setScorePopups((prev) => prev.filter((p) => p.id !== ppId)), 800);
+    if (ev.points > 0) {
+      const ppId = ++popupId;
+      // multiplier = кол-во слияний за ход (N), points = N*N
+      const n = Math.round(Math.sqrt(ev.points));
+      setScorePopups((prev) => [...prev, { id: ppId, x, y, points: ev.points, multiplier: n, color: style.text }]);
+      setTimeout(() => setScorePopups((prev) => prev.filter((p) => p.id !== ppId)), 800);
+    }
   }, []);
 
   // Проигрываем следующий шаг из очереди
@@ -95,17 +99,16 @@ export default function MergeGame() {
         setGrid(step.grid);
         if (step.mergeEvent) {
           showMergeEffects(step.mergeEvent);
-          setScore((s) => s + step.mergeEvent!.points);
+          // Очки начисляем только если это последнее слияние (points > 0)
+          if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
         }
-        // Пауза чтобы игрок увидел результат перед следующим шагом
         timerRef.current = setTimeout(playNextStep, PAUSE_MS);
       }, SLIDE_MS);
     } else {
-      // Нет слайдов — сразу показываем поле
       setGrid(step.grid);
       if (step.mergeEvent) {
         showMergeEffects(step.mergeEvent);
-        setScore((s) => s + step.mergeEvent!.points);
+        if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
       }
       timerRef.current = setTimeout(playNextStep, PAUSE_MS);
     }
