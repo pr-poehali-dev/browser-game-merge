@@ -68,13 +68,56 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
 }
 
 // ---- Превью текущего и следующего ----
-export function GamePreview({ current, next, boardPx }: { current: number; next: number; boardPx: number }) {
+export function GamePreview({ current, next, boardPx, liveMerges, lastScore }: {
+  current: number; next: number; boardPx: number; liveMerges: number; lastScore: number;
+}) {
+  const showScore = lastScore > 0 || liveMerges > 0;
+  const displayScore = liveMerges === 0 ? lastScore : (liveMerges === 1 ? 1 : Math.pow(2, liveMerges));
+  const isLive = liveMerges > 0;
+
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10, width: boardPx + BOARD_PAD * 2 }}>
+      {/* Счёт слева */}
+      <div style={{
+        minWidth: 64,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        opacity: showScore ? 1 : 0,
+        transition: "opacity 0.2s",
+      }}>
+        {showScore && (
+          <>
+            <span style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: isLive
+                ? (liveMerges >= 7 ? "#FFD700" : liveMerges >= 5 ? "#FF8C00" : "#fff")
+                : "rgba(255,255,255,0.7)",
+              letterSpacing: "-0.02em",
+              lineHeight: 1,
+              animation: isLive ? "scorePop 0.2s ease" : undefined,
+            }}>
+              +{displayScore}
+            </span>
+            {isLive && liveMerges >= 2 && (
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: 2 }}>
+                ×{liveMerges} объед.
+              </span>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Блоки */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <BigCurrentBlock value={current} />
         <NextBlock value={next} />
       </div>
+
+      {/* Пустое место справа для симметрии */}
+      <div style={{ minWidth: 64 }} />
     </div>
   );
 }

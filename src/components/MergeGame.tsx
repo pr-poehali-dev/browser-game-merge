@@ -31,10 +31,12 @@ export default function MergeGame() {
   const [slideBlocks, setSlideBlocks] = useState<(SlideAnim & { id: number })[]>([]);
   const [busy, setBusy]               = useState(false);
   const [liveMerges, setLiveMerges]   = useState(0); // живой счётчик объединений за ход
+  const [lastScore, setLastScore]     = useState(0); // очки последнего завершённого хода
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
   const totalScoreRef = useRef(0);                // накопленный счёт для финала
+  const prevScoreRef  = useRef(0);                // счёт до начала хода
   const finalGridRef  = useRef<Grid | null>(null);
   const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -77,7 +79,9 @@ export default function MergeGame() {
       setGrid(finalGrid);
       setScore(finalScore);
       setSlideBlocks([]);
-      setLiveMerges(0); // сброс счётчика
+      // Сохраняем очки хода и сбрасываем счётчик
+      setLastScore(finalScore - prevScoreRef.current); // очки добавленные за этот ход
+      setLiveMerges(0);
       setBusy(false);
 
       if (isBoardFull(finalGrid)) {
@@ -142,7 +146,9 @@ export default function MergeGame() {
       // steps[0] — состояние после посадки (без слияния), steps[1..] — каждое слияние
       stepsRef.current = steps.slice(1); // шаг 0 покажем сразу при посадке
       totalScoreRef.current = score + scoreGained;
+      prevScoreRef.current = score; // запомним счёт до хода
       finalGridRef.current = newGrid;
+      setLastScore(0); // сбрасываем предыдущий результат при новом броске
 
       // Показываем состояние "блок только упал" сразу (steps[0])
       if (steps.length > 0) setGrid(steps[0].grid);
@@ -208,34 +214,7 @@ export default function MergeGame() {
 
       <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
-      <GamePreview current={current} next={next} boardPx={boardPx} />
-
-      {/* Живой счётчик множителя */}
-      {liveMerges > 0 && (
-        <div style={{
-          marginTop: 8,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 16px",
-          background: "rgba(0,0,0,0.15)",
-          borderRadius: 20,
-          animation: "blockAppear 0.15s ease",
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", opacity: 0.8 }}>
-            объединений: <b>{liveMerges}</b>
-          </span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>→</span>
-          <span style={{
-            fontSize: 16,
-            fontWeight: 800,
-            color: liveMerges >= 7 ? "#FFD700" : liveMerges >= 5 ? "#FFA500" : "#fff",
-            letterSpacing: "-0.02em",
-          }}>
-            {liveMerges === 0 ? 0 : liveMerges === 1 ? 1 : Math.pow(2, liveMerges)} очков
-          </span>
-        </div>
-      )}
+      <GamePreview current={current} next={next} boardPx={boardPx} liveMerges={liveMerges} lastScore={lastScore} />
 
       <GameBoard
         displayGrid={grid}
