@@ -20,18 +20,22 @@ export function applyGravity(grid: Grid) {
   }
 }
 
-// Кладёт значение в первую свободную строку столбца col (сверху стека).
-// Возвращает строку куда положили. Если столбец полон — кладёт в строку 0 (крайний случай).
+// Добавляет блок в столбец: кладёт в строку 0 (как новый падающий сверху),
+// затем применяет гравитацию — блок осядет на вершину стека.
+// Возвращает итоговую строку.
 function placeInCol(grid: Grid, col: number, value: number): number {
-  for (let r = 0; r < ROWS; r++) {
-    if (grid[r][col] === EMPTY) {
-      grid[r][col] = value;
-      return r;
-    }
+  // Если строка 0 занята — сдвигаем всё вверх (расширяем стек вверх)
+  if (grid[0][col] !== EMPTY) {
+    // Столбец полон, не можем добавить — возвращаем 0
+    return 0;
   }
-  // Нет свободного места — сдвигаем всё вниз и кладём сверху
-  for (let r = ROWS - 1; r > 0; r--) grid[r][col] = grid[r - 1][col];
   grid[0][col] = value;
+  applyGravity(grid);
+  // После гравитации блок осел — найдём где он теперь
+  // Он будет первым ненулевым снизу (последний в стеке сверху)
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (grid[r][col] === value) return r;
+  }
   return 0;
 }
 
@@ -110,7 +114,6 @@ export function dropBlock(
         newGrid[r + 1][c] = EMPTY;
         for (const sc of rowBot) newGrid[r + 1][sc] = EMPTY;
 
-        applyGravity(newGrid);
         const destRow = placeInCol(newGrid, targetCol, resultValue);
 
         const pts = resultValue * participants;
@@ -154,7 +157,6 @@ export function dropBlock(
           .map(gc => ({ value: v, fromCol: gc, fromRow: r, toCol: targetCol2, toRow: r }));
 
         for (const gc of group) newGrid[r][gc] = EMPTY;
-        applyGravity(newGrid);
         const destRow2 = placeInCol(newGrid, targetCol2, resultValue);
 
         const pts2 = resultValue * participants;
