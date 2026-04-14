@@ -363,7 +363,7 @@ export default function MergeGame() {
       });
       setScorePopups((prev) => [...prev, ...newPopups]);
       setTimeout(() => {
-        setScorePopups((prev) => prev.filter((p) => !newPopups.find((n) => n.id === p.id)));
+        setScorePopups((prev) => prev.filter((sp) => !newPopups.find((n) => n.id === sp.id)));
       }, 800);
     }
 
