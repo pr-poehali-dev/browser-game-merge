@@ -3,9 +3,9 @@ export const ROWS = 8;
 export const EMPTY = 0;
 export const MAX_VALUE = Infinity;
 export const SPAWN_VALUES = [2, 4, 8, 16, 32, 64];
-export const CELL_SIZE = 52;
+export const CELL_SIZE = 64;
 export const GAP = 5;
-export const BOARD_PAD = 8;
+export const BOARD_PAD = 6;
 
 export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string; glow: string }> = {
   2:   { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE", glow: "#7ADFC8" },

@@ -100,7 +100,7 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
 
   return (
     <div
-      style={{ marginTop: 14, padding: BOARD_PAD, background: "#DDD5CB", borderRadius: 20, boxShadow: "0 6px 24px rgba(0,0,0,0.10)", position: "relative", overflow: "visible", width: boardPx + BOARD_PAD * 2, flexShrink: 0 }}
+      style={{ marginTop: 14, padding: BOARD_PAD, background: "#B0B0B0", borderRadius: 16, boxShadow: "0 6px 24px rgba(0,0,0,0.15)", position: "relative", overflow: "visible", width: boardPx + BOARD_PAD * 2, flexShrink: 0 }}
       onMouseLeave={onMouseLeave}
     >
       {/* Зоны клика */}
@@ -125,8 +125,8 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
             return (
               <div key={`${r}-${c}`} style={{
                 width: CELL_SIZE, height: CELL_SIZE, borderRadius: 10,
-                background: st ? st.bg : isHov ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)",
-                border: st ? `1.5px solid ${st.border}` : "1.5px solid transparent",
+                background: st ? st.bg : isHov ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.18)",
+                border: st ? `1.5px solid ${st.border}` : "1.5px solid rgba(255,255,255,0.10)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "background 0.1s",
                 outline: isHov && !st ? "2px solid rgba(255,255,255,0.35)" : "none",
