@@ -67,20 +67,30 @@ export function dropBlock(
         if (v === EMPTY) continue;
         if (newGrid[r + 1][c] !== v) continue;
 
-        // Собираем горизонтальных соседей с тем же значением в строке r
-        const sameRow: number[] = [c];
+        // Собираем горизонтальных соседей из ОБЕИХ строк пары (r и r+1)
+        // В строке r — соседи слева/справа от c
+        const rowTop: number[] = [c];
         let lc = c - 1;
-        while (lc >= 0 && newGrid[r][lc] === v) { sameRow.unshift(lc); lc--; }
+        while (lc >= 0 && newGrid[r][lc] === v) { rowTop.unshift(lc); lc--; }
         let rc = c + 1;
-        while (rc < COLS && newGrid[r][rc] === v) { sameRow.push(rc); rc++; }
+        while (rc < COLS && newGrid[r][rc] === v) { rowTop.push(rc); rc++; }
 
-        const participants = sameRow.length + 1;
+        // В строке r+1 — соседи слева/справа от c (не включая c — он уже в паре)
+        const rowBot: number[] = [];
+        let lc2 = c - 1;
+        while (lc2 >= 0 && newGrid[r + 1][lc2] === v) { rowBot.unshift(lc2); lc2--; }
+        let rc2 = c + 1;
+        while (rc2 < COLS && newGrid[r + 1][rc2] === v) { rowBot.push(rc2); rc2++; }
+
+        // Итого: rowTop (строка r) + 1 (r+1,c) + rowBot (строка r+1 без c)
+        const participants = rowTop.length + 1 + rowBot.length;
         const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) continue;
 
-        // Убираем всех участников из строки r и нижний блок
-        for (const sc of sameRow) newGrid[r][sc] = EMPTY;
+        // Убираем всех участников
+        for (const sc of rowTop) newGrid[r][sc] = EMPTY;
         newGrid[r + 1][c] = EMPTY;
+        for (const sc of rowBot) newGrid[r + 1][sc] = EMPTY;
 
         // Применяем гравитацию — теперь в dropCol появится свободное место сверху
         applyGravity(newGrid);
