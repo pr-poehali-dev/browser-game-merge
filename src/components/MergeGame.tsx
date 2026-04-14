@@ -105,8 +105,8 @@ function dropBlock(
 
         // Участников: sameRow.length (строка r) + 1 (строка r+1 в колонке c)
         const participants = sameRow.length + 1;
-        // Итоговое значение: всегда v*2, участники сверх 2 дают бонус к очкам
-        const resultValue = v * 2;
+        // Каждый участник удваивает: 2 блока=v*2, 3 блока=v*4, 4 блока=v*8
+        const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) continue;
 
         // Убираем всех участников
@@ -145,7 +145,7 @@ function dropBlock(
         while (rc2 < COLS && newGrid[r][rc2] === v) { group.push(rc2); rc2++; }
 
         const participants = group.length;
-        const resultValue = v * 2;
+        const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
         for (const gc of group) newGrid[r][gc] = EMPTY;
