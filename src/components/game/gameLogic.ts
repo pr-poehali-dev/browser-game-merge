@@ -175,9 +175,11 @@ export function dropBlock(
     }
   }
 
-  // Итоговые очки: N объединившихся блоков = N * N
+  // Итоговые очки по таблице:
+  // 2 блока=1, 3=4, 4=8, 5=16, 6=32, 7=64, 8=128, 9=256 ...
+  // Формула: n=2 → 1, n>=3 → 2^(n-1)
   const n = counter.blocks;
-  const totalScore = n * n;
+  const totalScore = n <= 1 ? 0 : n === 2 ? 1 : Math.pow(2, n - 1);
 
   // Распределяем очки по событиям (для всплывающих попапов)
   mergeEvents.forEach((ev, i) => {
