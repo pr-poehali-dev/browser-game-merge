@@ -65,6 +65,9 @@ export function dropBlock(
   while (changed) {
     changed = false;
 
+    // Гравитация перед каждой итерацией — блоки оседают после предыдущих слияний
+    applyGravity(newGrid);
+
     // Сканируем всё поле на вертикальные пары
     outer:
     for (let r = 0; r < ROWS - 1; r++) {
