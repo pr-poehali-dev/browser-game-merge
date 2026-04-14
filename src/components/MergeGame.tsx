@@ -343,61 +343,66 @@ export default function MergeGame() {
         overflowX: "hidden",
       }}
     >
-      {/* ---- Header ---- */}
+      {/* ---- Header (компактный) ---- */}
       <div style={{
         width: "100%",
         maxWidth: boardPx + BOARD_PAD * 2 + 16,
-        padding: "18px 8px 0",
+        padding: "10px 8px 0",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 8,
         boxSizing: "border-box",
       }}>
-        <div style={{ minWidth: 70 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", color: "#A89F96", textTransform: "uppercase", marginBottom: 2 }}>
+        {/* Рекорд */}
+        <div style={{ minWidth: 60 }}>
+          <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#B5ADA5", textTransform: "uppercase", marginBottom: 1 }}>
             Рекорд
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#5A4E45", lineHeight: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#7A6E65", lineHeight: 1 }}>
             {best.toLocaleString("ru")}
           </div>
         </div>
 
+        {/* Очки */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", color: "#A89F96", textTransform: "uppercase", marginBottom: 2 }}>
+          <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#B5ADA5", textTransform: "uppercase", marginBottom: 1 }}>
             Очки
           </div>
           <div
             key={score}
-            style={{ fontSize: 30, fontWeight: 700, color: "#2C2017", lineHeight: 1, animation: "scorePop 0.22s ease" }}
+            style={{ fontSize: 20, fontWeight: 700, color: "#2C2017", lineHeight: 1, animation: "scorePop 0.22s ease" }}
           >
             {score.toLocaleString("ru")}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, minWidth: 70, justifyContent: "flex-end" }}>
-          <ActionBtn onClick={handleUndo} disabled={history.length === 0} title="Отменить ход">
-            <Icon name="Undo2" size={15} />
+        {/* Кнопки */}
+        <div style={{ display: "flex", gap: 6, minWidth: 60, justifyContent: "flex-end" }}>
+          <ActionBtn onClick={handleUndo} disabled={history.length === 0} title="Отменить ход" small>
+            <Icon name="Undo2" size={13} />
           </ActionBtn>
-          <ActionBtn onClick={handleHardRefresh} title="Обновить кэш">
-            <Icon name="RefreshCcw" size={15} />
+          <ActionBtn onClick={handleHardRefresh} title="Обновить кэш" small>
+            <Icon name="RefreshCcw" size={13} />
           </ActionBtn>
         </div>
       </div>
 
-      {/* ---- Preview: Сейчас → Следующий ---- */}
+      {/* ---- Preview: большой текущий + маленький следующий в одну строку ---- */}
       <div style={{
         display: "flex",
         alignItems: "center",
-        gap: 16,
-        marginTop: 14,
-        padding: "8px 18px",
-        background: "#EAE3DA",
-        borderRadius: 14,
+        justifyContent: "center",
+        gap: 10,
+        marginTop: 10,
+        width: boardPx + BOARD_PAD * 2,
       }}>
-        <PreviewBlock label="Сейчас" value={current} size={50} />
-        <Icon name="ChevronRight" size={14} style={{ color: "#B5ADA5" }} />
-        <PreviewBlock label="Следующий" value={next} size={38} dimmed />
+        {/* Текущий — крупный блок */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <BigCurrentBlock value={current} />
+          {/* Следующий — вдвое меньше, полупрозрачный */}
+          <NextBlock value={next} />
+        </div>
       </div>
 
       {/* ---- Board ---- */}
@@ -530,6 +535,10 @@ export default function MergeGame() {
       </p>
 
       <style>{`
+        @keyframes blockAppear {
+          0%   { transform: scale(0.6); opacity: 0; }
+          100% { transform: scale(1);   opacity: 1; }
+        }
         @keyframes scorePop {
           0%   { transform: scale(1.3); }
           100% { transform: scale(1); }
@@ -545,39 +554,17 @@ export default function MergeGame() {
   );
 }
 
-// ---- Sub-components ----
-function PreviewBlock({ label, value, size, dimmed }: { label: string; value: number; size: number; dimmed?: boolean }) {
-  const s = getBlockStyle(value);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: "#A89F96", textTransform: "uppercase" }}>
-        {label}
-      </span>
-      <div style={{
-        width: size, height: size, borderRadius: size * 0.18,
-        background: s.bg, border: `1.5px solid ${s.border}`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        opacity: dimmed ? 0.65 : 1, transition: "all 0.15s",
-      }}>
-        <span style={{
-          fontSize: size < 44 ? (value >= 100 ? 11 : 14) : (value >= 100 ? 15 : 22),
-          fontWeight: 700, color: s.text, letterSpacing: "-0.02em",
-        }}>
-          {value}
-        </span>
-      </div>
-    </div>
-  );
-}
 
-function ActionBtn({ onClick, disabled, title, children }: {
-  onClick: () => void; disabled?: boolean; title?: string; children: React.ReactNode;
+
+function ActionBtn({ onClick, disabled, title, children, small }: {
+  onClick: () => void; disabled?: boolean; title?: string; children: React.ReactNode; small?: boolean;
 }) {
+  const sz = small ? 28 : 34;
   return (
     <button
       onClick={onClick} disabled={disabled} title={title}
       style={{
-        width: 34, height: 34, borderRadius: 10, border: "none",
+        width: sz, height: sz, borderRadius: 8, border: "none",
         background: disabled ? "#EAE3DA" : "#E0D8CE",
         color: disabled ? "#C5BDB5" : "#4A3F35",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -585,10 +572,72 @@ function ActionBtn({ onClick, disabled, title, children }: {
         transition: "background 0.12s, transform 0.1s",
         fontFamily: "'Rubik', sans-serif",
       }}
-      onMouseDown={(e) => !disabled && (e.currentTarget.style.transform = "scale(0.90)")}
+      onMouseDown={(e) => !disabled && (e.currentTarget.style.transform = "scale(0.88)")}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
       {children}
     </button>
+  );
+}
+
+// Крупный блок текущей цифры
+function BigCurrentBlock({ value }: { value: number }) {
+  const s = getBlockStyle(value);
+  const SIZE = 64;
+  return (
+    <div
+      key={value}
+      style={{
+        width: SIZE, height: SIZE,
+        borderRadius: 14,
+        background: s.bg,
+        border: `2px solid ${s.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: `0 4px 16px rgba(0,0,0,0.10)`,
+        animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{
+        fontSize: value >= 100 ? 22 : 32,
+        fontWeight: 800,
+        color: s.text,
+        letterSpacing: "-0.03em",
+        lineHeight: 1,
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// Маленький полупрозрачный следующий блок
+function NextBlock({ value }: { value: number }) {
+  const s = getBlockStyle(value);
+  const SIZE = 36;
+  return (
+    <div
+      key={value}
+      style={{
+        width: SIZE, height: SIZE,
+        borderRadius: 9,
+        background: s.bg,
+        border: `1.5px solid ${s.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: 0.45,
+        animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{
+        fontSize: value >= 100 ? 11 : 16,
+        fontWeight: 700,
+        color: s.text,
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+      }}>
+        {value}
+      </span>
+    </div>
   );
 }
