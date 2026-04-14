@@ -1,4 +1,4 @@
-import { COLS, ROWS, EMPTY, MAX_VALUE, SPAWN_VALUES, Grid, MergeEvent, MergeStep } from "./gameTypes";
+import { COLS, ROWS, EMPTY, MAX_VALUE, SPAWN_VALUES, Grid, MergeEvent, MergeStep, SlideAnim } from "./gameTypes";
 
 export function emptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
@@ -54,7 +54,7 @@ export function dropBlock(
   const steps: MergeStep[] = [];
 
   // Шаг 0: блок упал, слияний ещё нет
-  steps.push({ grid: cloneGrid(newGrid), mergeEvent: null });
+  steps.push({ grid: cloneGrid(newGrid), mergeEvent: null, slides: [] });
 
   // dropCol — столбец броска, результат всегда остаётся в нём
   const dropCol = col;
@@ -91,6 +91,13 @@ export function dropBlock(
         const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) continue;
 
+        // Собираем слайды ДО удаления: все участники летят к dropCol
+        const slides1: SlideAnim[] = [];
+        for (const sc of rowTop) if (sc !== dropCol) slides1.push({ value: v, fromCol: sc, fromRow: r, toCol: dropCol, toRow: r });
+        // нижний блок пары
+        slides1.push({ value: v, fromCol: c, fromRow: r + 1, toCol: dropCol, toRow: r });
+        for (const sc of rowBot) slides1.push({ value: v, fromCol: sc, fromRow: r + 1, toCol: dropCol, toRow: r });
+
         // Убираем всех участников
         for (const sc of rowTop) newGrid[r][sc] = EMPTY;
         newGrid[r + 1][c] = EMPTY;
@@ -107,7 +114,7 @@ export function dropBlock(
         const ev1: MergeEvent = { row: destRow, col: dropCol, resultValue, participants, points: pts };
         mergedPositions.push([destRow, dropCol]);
         mergeEvents.push(ev1);
-        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev1 });
+        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev1, slides: slides1 });
 
         changed = true;
         break outer;
@@ -133,6 +140,11 @@ export function dropBlock(
         const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
+        // Слайды для горизонтальной группы — каждый участник летит к dropCol
+        const slides2: SlideAnim[] = group
+          .filter(gc => gc !== dropCol)
+          .map(gc => ({ value: v, fromCol: gc, fromRow: r, toCol: dropCol, toRow: r }));
+
         // Убираем всю группу
         for (const gc of group) newGrid[r][gc] = EMPTY;
 
@@ -147,7 +159,7 @@ export function dropBlock(
         const ev2: MergeEvent = { row: destRow2, col: dropCol, resultValue, participants, points: pts2 };
         mergedPositions.push([destRow2, dropCol]);
         mergeEvents.push(ev2);
-        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev2 });
+        steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev2, slides: slides2 });
 
         changed = true;
         break outer2;

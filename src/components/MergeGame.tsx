@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent } from "./game/gameTypes";
+import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent, SlideAnim } from "./game/gameTypes";
 import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull } from "./game/gameLogic";
 import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
@@ -8,9 +8,10 @@ type Snapshot = { grid: Grid; score: number; current: number; next: number };
 const FLY_MS   = 320; // длительность полёта блока
 const MERGE_MS = 380; // длительность одного шага слияния
 
-let flyId   = 0;
-let explId  = 0;
-let popupId = 0;
+let flyId    = 0;
+let explId   = 0;
+let popupId  = 0;
+let slideId  = 0;  
 
 export default function MergeGame() {
   const [grid, setGrid]               = useState<Grid>(emptyGrid);
@@ -26,7 +27,8 @@ export default function MergeGame() {
   const [flyingBlocks, setFlyingBlocks] = useState<FlyingBlock[]>([]);
   const [explosions, setExplosions]   = useState<Explosion[]>([]);
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
-  const [busy, setBusy]               = useState(false); // блокируем ввод во время анимации
+  const [slideBlocks, setSlideBlocks] = useState<(SlideAnim & { id: number })[]>([]);
+  const [busy, setBusy]               = useState(false);
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
@@ -68,6 +70,7 @@ export default function MergeGame() {
       const finalScore = totalScoreRef.current;
       setGrid(finalGrid);
       setScore(finalScore);
+      setSlideBlocks([]);
       setBusy(false);
 
       if (isBoardFull(finalGrid)) {
@@ -81,18 +84,29 @@ export default function MergeGame() {
       return;
     }
 
-    // Показываем состояние поля этого шага
-    setGrid(step.grid);
-
-    // Если на этом шаге было слияние — показываем эффекты
-    if (step.mergeEvent) {
-      showMergeEffects(step.mergeEvent);
-      // Обновляем промежуточный счёт
-      setScore((s) => s + step.mergeEvent!.points);
+    // Запускаем слайды (блоки летят к dropCol)
+    if (step.slides && step.slides.length > 0) {
+      const newSlides = step.slides.map(sl => ({ ...sl, id: ++slideId }));
+      setSlideBlocks(newSlides);
+      // Через SLIDE_MS убираем слайды и показываем финальное поле шага
+      timerRef.current = setTimeout(() => {
+        setSlideBlocks([]);
+        setGrid(step.grid);
+        if (step.mergeEvent) {
+          showMergeEffects(step.mergeEvent);
+          setScore((s) => s + step.mergeEvent!.points);
+        }
+        timerRef.current = setTimeout(playNextStep, MERGE_MS);
+      }, 260);
+    } else {
+      // Нет слайдов — сразу показываем поле
+      setGrid(step.grid);
+      if (step.mergeEvent) {
+        showMergeEffects(step.mergeEvent);
+        setScore((s) => s + step.mergeEvent!.points);
+      }
+      timerRef.current = setTimeout(playNextStep, MERGE_MS);
     }
-
-    // Планируем следующий шаг
-    timerRef.current = setTimeout(playNextStep, MERGE_MS);
   }, [showMergeEffects]);
 
   // Когда летящий блок долетел
@@ -151,6 +165,7 @@ export default function MergeGame() {
     setFlyingBlocks([]);
     setExplosions([]);
     setScorePopups([]);
+    setSlideBlocks([]);
     setBusy(false);
   }, [history, busy]);
 
@@ -166,6 +181,7 @@ export default function MergeGame() {
     setFlyingBlocks([]);
     setExplosions([]);
     setScorePopups([]);
+    setSlideBlocks([]);
     setBusy(false);
   }, []);
 
@@ -189,6 +205,7 @@ export default function MergeGame() {
         flyingBlocks={flyingBlocks}
         explosions={explosions}
         scorePopups={scorePopups}
+        slideBlocks={slideBlocks}
         hoverCol={hoverCol}
         gameOver={gameOver}
         score={score}

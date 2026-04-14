@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { CELL_SIZE, GAP, BOARD_PAD, ROWS, getBlockStyle, FlyingBlock, Explosion, ScorePopup } from "./gameTypes";
+import { CELL_SIZE, GAP, BOARD_PAD, ROWS, getBlockStyle, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
 
 // ---- Метка числа на блоке ----
 export function BlockLabel({ value, color }: { value: number; color: string }) {
@@ -41,6 +41,44 @@ export function FlyBlock({ fb, onDone }: { fb: FlyingBlock; onDone: (id: number)
     <div ref={ref} style={{ position: "absolute", left: leftPos, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 20, pointerEvents: "none" }}>
       <div style={{ width: "100%", height: "100%", borderRadius: 10, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 20px rgba(0,0,0,0.18)` }}>
         <BlockLabel value={fb.value} color={s.text} />
+      </div>
+    </div>
+  );
+}
+
+// ---- Скользящий блок (горизонтально) ----
+export function SlideBlock({ sl, id, onDone }: { sl: SlideAnim; id: number; onDone: (id: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const s = getBlockStyle(sl.value);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fromX = BOARD_PAD + sl.fromCol * (CELL_SIZE + GAP);
+    const toX   = BOARD_PAD + sl.toCol   * (CELL_SIZE + GAP);
+    const deltaX = toX - fromX;
+    const fromY = BOARD_PAD + sl.fromRow * (CELL_SIZE + GAP);
+    const toY   = BOARD_PAD + sl.toRow   * (CELL_SIZE + GAP);
+    const deltaY = toY - fromY;
+    const anim = el.animate(
+      [
+        { transform: `translate(0px, 0px)`, opacity: "1" },
+        { transform: `translate(${deltaX}px, ${deltaY}px)`, opacity: "0.85" },
+      ],
+      { duration: 280, easing: "cubic-bezier(0.34,1.2,0.64,1)", fill: "forwards" }
+    );
+    anim.onfinish = () => onDone(id);
+    return () => anim.cancel();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startLeft = BOARD_PAD + sl.fromCol * (CELL_SIZE + GAP);
+  const startTop  = BOARD_PAD + sl.fromRow * (CELL_SIZE + GAP);
+
+  return (
+    <div ref={ref} style={{ position: "absolute", left: startLeft, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 22, pointerEvents: "none" }}>
+      <div style={{ width: "100%", height: "100%", borderRadius: 10, background: s.bg, border: `2px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 16px ${s.glow}88` }}>
+        <BlockLabel value={sl.value} color={s.text} />
       </div>
     </div>
   );

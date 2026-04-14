@@ -1,7 +1,7 @@
 import React from "react";
 import Icon from "@/components/ui/icon";
-import { COLS, ROWS, EMPTY, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup } from "./gameTypes";
-import { FlyBlock, ExplosionEffect, ScorePopupEffect, BlockLabel } from "./GameEffects";
+import { COLS, ROWS, EMPTY, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
+import { FlyBlock, ExplosionEffect, ScorePopupEffect, BlockLabel, SlideBlock } from "./GameEffects";
 
 // ---- Кнопка действия ----
 export function ActionBtn({ onClick, disabled, title, children, small }: {
@@ -80,11 +80,12 @@ export function GamePreview({ current, next, boardPx }: { current: number; next:
 }
 
 // ---- Игровое поле ----
-export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, hoverCol, gameOver, score, onDrop, onHoverCol, onRestart, onMouseLeave, onFlyDone }: {
+export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, slideBlocks, hoverCol, gameOver, score, onDrop, onHoverCol, onRestart, onMouseLeave, onFlyDone }: {
   displayGrid: Grid;
   flyingBlocks: FlyingBlock[];
   explosions: Explosion[];
   scorePopups: ScorePopup[];
+  slideBlocks: (SlideAnim & { id: number })[];
   hoverCol: number | null;
   gameOver: boolean;
   score: number;
@@ -119,7 +120,8 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
             const val = displayGrid[r][c];
             const isHov = hoverCol === c;
             const isFlying = flyingBlocks.some((fb) => fb.col === c && fb.targetRow === r);
-            const st = (val !== EMPTY && !isFlying) ? getBlockStyle(val) : null;
+            const isSliding = slideBlocks.some((sl) => sl.fromCol === c && sl.fromRow === r);
+            const st = (val !== EMPTY && !isFlying && !isSliding) ? getBlockStyle(val) : null;
             return (
               <div key={`${r}-${c}`} style={{
                 width: CELL_SIZE, height: CELL_SIZE, borderRadius: 10,
@@ -143,6 +145,9 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
 
       {/* Взрывы */}
       {explosions.map((exp) => <ExplosionEffect key={exp.id} exp={exp} />)}
+
+      {/* Скользящие блоки (горизонтальная анимация слияния) */}
+      {slideBlocks.map((sl) => <SlideBlock key={sl.id} sl={sl} id={sl.id} onDone={() => {}} />)}
 
       {/* Всплывающие очки */}
       {scorePopups.map((popup) => <ScorePopupEffect key={popup.id} popup={popup} />)}
