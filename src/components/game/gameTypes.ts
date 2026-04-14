@@ -7,42 +7,60 @@ export const CELL_SIZE = 64;
 export const GAP = 5;
 export const BOARD_PAD = 6;
 
-// Каждый номинал — уникальный насыщенный цвет для тренировки глаза колориста.
-// Соседние значения из разных частей спектра, но между близкими есть тонкая разница.
-export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string; glow: string }> = {
-  2:    { bg: "#D6EAF8", text: "#1A5276", border: "#A9CCE3", glow: "#5DADE2" }, // холодный голубой
-  4:    { bg: "#D1F2EB", text: "#0E6655", border: "#A2D9CE", glow: "#1ABC9C" }, // мятно-зелёный
-  8:    { bg: "#D5F5E3", text: "#1E8449", border: "#A9DFBF", glow: "#27AE60" }, // ярко-зелёный
-  16:   { bg: "#FDFDE7", text: "#7D6608", border: "#F9E79F", glow: "#F1C40F" }, // насыщенный жёлтый
-  32:   { bg: "#FDEBD0", text: "#784212", border: "#FAD7A0", glow: "#E67E22" }, // тёплый оранжевый
-  64:   { bg: "#FADBD8", text: "#7B241C", border: "#F5B7B1", glow: "#E74C3C" }, // красный
-  128:  { bg: "#F9EBEA", text: "#922B21", border: "#F1948A", glow: "#C0392B" }, // тёмно-красный
-  256:  { bg: "#F5EEF8", text: "#6C3483", border: "#D2B4DE", glow: "#9B59B6" }, // фиолетовый
-  512:  { bg: "#EBF5FB", text: "#154360", border: "#AED6F1", glow: "#2980B9" }, // синий
-  1024: { bg: "#E8F8F5", text: "#0B5345", border: "#A2D9CE", glow: "#16A085" }, // тёмный бирюзовый
-  2048: { bg: "#FEF9E7", text: "#7E5109", border: "#FAD7A0", glow: "#D4AC0D" }, // золотой
-  4096: { bg: "#FDEDEC", text: "#78281F", border: "#F5CBA7", glow: "#BA4A00" }, // терракота
-  8192: { bg: "#EBF5FB", text: "#212F3D", border: "#85C1E9", glow: "#1F618D" }, // глубокий синий
+// ---- Цветовая система для тренировки колористов ----
+//
+// Логика: каждый номинал — уникальный hue по цветовому кругу (0-360°).
+// Базовые значения (2-64) — чёткие, далеко разнесённые цвета (шаг ~60°).
+// При каждом удвоении шаг между соседними hue уменьшается вдвое — цвета всё
+// ближе друг к другу, тренируя глаз различать тонкие оттенки.
+//
+// Уровень n = log2(value): hue(n) = BASE_HUE + SUM(step/2^k) для k=1..n
+// Насыщенность постоянная ~80%, светлота ~75% (пастельный фон блока).
+
+// Базовые hue для первых 6 номиналов (цветовой круг)
+// 2=жёлтый, 4=оранжевый, 8=красный, 16=фиолетовый, 32=синий, 64=голубой
+const BASE_HUES: Record<number, number> = {
+  2:  52,   // жёлтый
+  4:  28,   // оранжевый
+  8:  0,    // красный
+  16: 280,  // фиолетовый
+  32: 220,  // синий
+  64: 185,  // голубой
 };
 
-// Палитра для значений выше известных — циклически по спектру
-const DYNAMIC_PALETTE = [
-  { bg: "#D6EAF8", text: "#1A5276", border: "#A9CCE3", glow: "#5DADE2" },
-  { bg: "#D1F2EB", text: "#0E6655", border: "#A2D9CE", glow: "#1ABC9C" },
-  { bg: "#F5EAF8", text: "#7A3A9A", border: "#E0C5F0", glow: "#D07AF0" },
-  { bg: "#FDF0E8", text: "#9A5A2A", border: "#F0D5C0", glow: "#F0A06A" },
-  { bg: "#FEF0F0", text: "#9A3A3A", border: "#F0C5C5", glow: "#F08080" },
-  { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
-  { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
-  { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
-];
+// Для значений >= 128: интерполяция между предыдущими hue с уменьшающимся шагом
+// Чем больше число — тем меньше разница в hue между соседями
+function computeHue(v: number): number {
+  if (BASE_HUES[v] !== undefined) return BASE_HUES[v];
+  const level = Math.round(Math.log2(v)); // 7=128, 8=256, 9=512...
+  // Начинаем от hue=64 (голубой) и делаем шаги всё меньше
+  // Шаг между уровнями: начальный 30°, делится пополам каждые 2 уровня
+  const baseHue = 185; // от голубого
+  const step = 30 / Math.pow(2, Math.floor((level - 7) / 2));
+  const direction = (level % 2 === 0) ? 1 : -1;
+  return (baseHue + direction * step * (level - 6) + 360) % 360;
+}
+
+function hslToStyle(h: number, s: number, l: number) {
+  return `hsl(${Math.round(h)}, ${s}%, ${l}%)`;
+}
 
 export function getBlockStyle(v: number) {
-  if (BLOCK_COLORS[v]) return BLOCK_COLORS[v];
-  // Для любого значения выше известных — берём цвет по индексу степени двойки
+  const hue = computeHue(v);
+  // Насыщенность: базовые яркие (70%), при больших числах чуть снижается (сложнее!)
   const level = Math.round(Math.log2(v));
-  return DYNAMIC_PALETTE[level % DYNAMIC_PALETTE.length];
+  const sat = Math.max(40, 72 - (level - 1) * 2); // от 70% до ~40% для огромных чисел
+  // Фон — светлый (85%), бордер — средний (65%), текст — тёмный (25%), glow — насыщенный
+  return {
+    bg:     hslToStyle(hue, sat, 88),
+    border: hslToStyle(hue, sat - 10, 72),
+    text:   hslToStyle(hue, sat + 10, 22),
+    glow:   hslToStyle(hue, sat + 5, 55),
+  };
 }
+
+// Оставляем для совместимости (не используется напрямую)
+export const BLOCK_COLORS: Record<number, ReturnType<typeof getBlockStyle>> = {};
 
 export type Grid = number[][];
 export type FlyingBlock = { id: number; value: number; col: number; targetRow: number };
