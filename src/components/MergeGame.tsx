@@ -7,8 +7,9 @@ const ROWS = 7;
 const EMPTY = 0;
 const MAX_VALUE = 512;
 const SPAWN_VALUES = [2, 4, 8, 16, 32, 64];
+const CELL_SIZE = 52;
+const GAP = 5;
 
-// Бледные, слабонасыщенные пастельные цвета для каждого номинала
 const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string }> = {
   2:   { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE" },
   4:   { bg: "#EAF0FB", text: "#3A5A9A", border: "#C5D5F0" },
@@ -28,16 +29,6 @@ function getBlockStyle(value: number) {
 type Grid = number[][];
 type GameSnapshot = { grid: Grid; score: number; current: number; next: number };
 
-// Анимирующийся блок (летит снизу вверх к целевой ячейке)
-type FlyingBlock = {
-  id: number;
-  value: number;
-  col: number;
-  targetRow: number;
-};
-
-let flyId = 0;
-
 function emptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
 }
@@ -51,9 +42,7 @@ function cloneGrid(g: Grid): Grid {
 }
 
 function dropBlock(
-  grid: Grid,
-  col: number,
-  value: number
+  grid: Grid, col: number, value: number
 ): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number } {
   const newGrid = cloneGrid(grid);
   let row = -1;
@@ -106,7 +95,77 @@ function isBoardFull(grid: Grid): boolean {
   return grid[0].every((v) => v !== EMPTY);
 }
 
-// ---- Component ----
+// ---- Flying block via Web Animations API ----
+type FlyingBlock = { id: number; value: number; col: number; targetRow: number };
+let flyId = 0;
+
+function FlyBlock({
+  fb, boardPadding, onDone,
+}: {
+  fb: FlyingBlock;
+  boardPadding: number;
+  onDone: (id: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const s = getBlockStyle(fb.value);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const finalTop = boardPadding + fb.targetRow * (CELL_SIZE + GAP);
+    const startTop = boardPadding + ROWS * (CELL_SIZE + GAP) + 20;
+    const deltaY = finalTop - startTop; // отрицательное — вверх
+
+    const anim = el.animate(
+      [
+        { transform: `translateY(0px)`, opacity: "0.5" },
+        { transform: `translateY(${deltaY}px)`, opacity: "1" },
+      ],
+      { duration: 360, easing: "cubic-bezier(0.22,1,0.36,1)", fill: "forwards" }
+    );
+
+    anim.onfinish = () => onDone(fb.id);
+    return () => anim.cancel();
+  }, []);
+
+  const leftPos = boardPadding + fb.col * (CELL_SIZE + GAP);
+  const startTop = boardPadding + ROWS * (CELL_SIZE + GAP) + 20;
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        left: leftPos,
+        top: startTop,
+        width: CELL_SIZE,
+        height: CELL_SIZE,
+        zIndex: 20,
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{
+        width: "100%", height: "100%",
+        borderRadius: 10,
+        background: s.bg,
+        border: `1.5px solid ${s.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
+      }}>
+        <span style={{
+          fontSize: fb.value >= 100 ? 16 : 22,
+          fontWeight: 700, color: s.text,
+          letterSpacing: "-0.02em",
+        }}>
+          {fb.value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ---- Main Component ----
 export default function MergeGame() {
   const [grid, setGrid] = useState<Grid>(emptyGrid);
   const [score, setScore] = useState(0);
@@ -121,10 +180,11 @@ export default function MergeGame() {
   const [flyingBlocks, setFlyingBlocks] = useState<FlyingBlock[]>([]);
   const [mergedCells, setMergedCells] = useState<Set<string>>(new Set());
   const [animating, setAnimating] = useState(false);
-
   const prevBest = useRef(best);
-  const CELL_SIZE = 62;
-  const GAP = 6;
+
+  const BOARD_PAD = 8;
+  const boardPx = COLS * CELL_SIZE + (COLS - 1) * GAP;
+  const boardH = ROWS * CELL_SIZE + (ROWS - 1) * GAP;
 
   useEffect(() => {
     if (score > best) {
@@ -134,6 +194,13 @@ export default function MergeGame() {
     }
   }, [score, best]);
 
+  const handleFlyDone = useCallback((id: number) => {
+    setFlyingBlocks((prev) => {
+      const remaining = prev.filter((b) => b.id !== id);
+      return remaining;
+    });
+  }, []);
+
   const handleDrop = useCallback(
     (col: number) => {
       if (gameOver || animating) return;
@@ -141,30 +208,22 @@ export default function MergeGame() {
       const { newGrid, scoreGained, placed, landRow } = dropBlock(grid, col, current);
       if (!placed) return;
 
-      // Сохраняем снимок
-      setHistory((h) => [
-        ...h.slice(-19),
-        { grid: cloneGrid(grid), score, current, next },
-      ]);
+      setHistory((h) => [...h.slice(-19), { grid: cloneGrid(grid), score, current, next }]);
 
-      // Запускаем летящий блок
       const fid = ++flyId;
       setFlyingBlocks((prev) => [...prev, { id: fid, value: current, col, targetRow: landRow }]);
       setAnimating(true);
 
       setTimeout(() => {
-        // Убираем летящий блок, ставим сетку
-        setFlyingBlocks((prev) => prev.filter((b) => b.id !== fid));
         setGrid(newGrid);
 
         if (scoreGained > 0) {
-          // Подсвечиваем все ненулевые ячейки на мгновение
           const keys = new Set<string>();
           for (let r = 0; r < ROWS; r++)
             for (let c = 0; c < COLS; c++)
               if (newGrid[r][c] !== EMPTY) keys.add(`${r}-${c}`);
           setMergedCells(keys);
-          setTimeout(() => setMergedCells(new Set()), 320);
+          setTimeout(() => setMergedCells(new Set()), 350);
         }
 
         const newScore = score + scoreGained;
@@ -181,7 +240,7 @@ export default function MergeGame() {
             prevBest.current = newScore;
           }
         }
-      }, 340);
+      }, 380);
     },
     [gameOver, animating, grid, score, current, next]
   );
@@ -208,8 +267,18 @@ export default function MergeGame() {
     setAnimating(false);
   }, []);
 
-  const boardPx = COLS * CELL_SIZE + (COLS - 1) * GAP;
-  const boardH = ROWS * CELL_SIZE + (ROWS - 1) * GAP;
+  const handleHardRefresh = useCallback(() => {
+    // Принудительно обновляем кэш и перезагружаем страницу
+    if ("caches" in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      }).finally(() => {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  }, []);
 
   return (
     <div
@@ -222,22 +291,23 @@ export default function MergeGame() {
         fontFamily: "'Rubik', sans-serif",
         userSelect: "none",
         paddingBottom: 28,
+        // Важно: не обрезаем содержимое
+        overflowX: "hidden",
       }}
     >
       {/* ---- Header ---- */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: boardPx + 48,
-          padding: "18px 20px 0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-        }}
-      >
+      <div style={{
+        width: "100%",
+        maxWidth: boardPx + BOARD_PAD * 2 + 16,
+        padding: "18px 8px 0",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        boxSizing: "border-box",
+      }}>
         {/* Рекорд */}
-        <div style={{ minWidth: 72 }}>
+        <div style={{ minWidth: 70 }}>
           <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.14em", color: "#A89F96", textTransform: "uppercase", marginBottom: 2 }}>
             Рекорд
           </div>
@@ -260,28 +330,26 @@ export default function MergeGame() {
         </div>
 
         {/* Кнопки */}
-        <div style={{ display: "flex", gap: 8, minWidth: 72, justifyContent: "flex-end" }}>
-          <ActionBtn onClick={handleUndo} disabled={history.length === 0 || animating} title="Отменить">
+        <div style={{ display: "flex", gap: 8, minWidth: 70, justifyContent: "flex-end" }}>
+          <ActionBtn onClick={handleUndo} disabled={history.length === 0 || animating} title="Отменить ход">
             <Icon name="Undo2" size={15} />
           </ActionBtn>
-          <ActionBtn onClick={handleRestart} title="Новая игра">
-            <Icon name="RefreshCw" size={15} />
+          <ActionBtn onClick={handleHardRefresh} title="Обновить кэш и перезагрузить">
+            <Icon name="RefreshCcw" size={15} />
           </ActionBtn>
         </div>
       </div>
 
       {/* ---- Preview ---- */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          marginTop: 14,
-          padding: "8px 18px",
-          background: "#EAE3DA",
-          borderRadius: 14,
-        }}
-      >
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        marginTop: 14,
+        padding: "8px 18px",
+        background: "#EAE3DA",
+        borderRadius: 14,
+      }}>
         <PreviewBlock label="Сейчас" value={current} size={50} />
         <Icon name="ChevronRight" size={14} style={{ color: "#B5ADA5" }} />
         <PreviewBlock label="Следующий" value={next} size={38} dimmed />
@@ -291,21 +359,32 @@ export default function MergeGame() {
       <div
         style={{
           marginTop: 14,
-          padding: 8,
+          padding: BOARD_PAD,
           background: "#DDD5CB",
           borderRadius: 20,
           boxShadow: "0 6px 24px rgba(0,0,0,0.10)",
           position: "relative",
-          overflow: "hidden",
+          // overflow visible — чтобы летящий блок был виден снизу
+          overflow: "visible",
+          // Явная ширина чтобы не было обрезки
+          width: boardPx + BOARD_PAD * 2,
+          flexShrink: 0,
         }}
         onMouseLeave={() => setHoverCol(null)}
       >
-        {/* Колонки-зоны нажатия */}
-        <div style={{ display: "flex", gap: GAP, position: "absolute", inset: 8, zIndex: 10 }}>
+        {/* Невидимые зоны клика по колонкам */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`,
+          gap: GAP,
+          position: "absolute",
+          top: BOARD_PAD, left: BOARD_PAD,
+          zIndex: 10,
+        }}>
           {Array.from({ length: COLS }).map((_, c) => (
             <div
               key={c}
-              style={{ flex: 1, height: "100%", cursor: animating || gameOver ? "default" : "pointer" }}
+              style={{ width: CELL_SIZE, height: boardH, cursor: animating || gameOver ? "default" : "pointer" }}
               onClick={() => handleDrop(c)}
               onMouseEnter={() => setHoverCol(c)}
             />
@@ -313,23 +392,21 @@ export default function MergeGame() {
         </div>
 
         {/* Сетка ячеек */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`,
-            gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`,
-            gap: GAP,
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`,
+          gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`,
+          gap: GAP,
+          position: "relative",
+          zIndex: 1,
+        }}>
           {Array.from({ length: ROWS }).map((_, r) =>
             Array.from({ length: COLS }).map((_, c) => {
               const val = grid[r][c];
               const isHov = hoverCol === c;
               const isMerged = mergedCells.has(`${r}-${c}`);
               const isFlying = flyingBlocks.some((fb) => fb.col === c && fb.targetRow === r);
-              const style = (val !== EMPTY && !isFlying) ? getBlockStyle(val) : null;
+              const st = (val !== EMPTY && !isFlying) ? getBlockStyle(val) : null;
 
               return (
                 <div
@@ -337,28 +414,25 @@ export default function MergeGame() {
                   style={{
                     width: CELL_SIZE,
                     height: CELL_SIZE,
-                    borderRadius: 11,
-                    background: style ? style.bg : isHov ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)",
-                    border: style ? `1.5px solid ${style.border}` : "1.5px solid transparent",
-                    opacity: isFlying ? 0 : 1,
+                    borderRadius: 10,
+                    background: st ? st.bg : isHov ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)",
+                    border: st ? `1.5px solid ${st.border}` : "1.5px solid transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     transition: "background 0.12s",
-                    animation: isMerged ? "mergeFlash 0.32s ease" : undefined,
-                    outline: isHov && !style ? "2px solid rgba(255,255,255,0.40)" : "none",
+                    animation: isMerged && !isFlying ? "mergeFlash 0.35s ease" : undefined,
+                    outline: isHov && !st ? "2px solid rgba(255,255,255,0.40)" : "none",
                   }}
                 >
-                  {val !== EMPTY && (
-                    <span
-                      style={{
-                        fontSize: val >= 100 ? 18 : 24,
-                        fontWeight: 700,
-                        color: style!.text,
-                        letterSpacing: "-0.02em",
-                        lineHeight: 1,
-                      }}
-                    >
+                  {st && val !== EMPTY && (
+                    <span style={{
+                      fontSize: val >= 100 ? 16 : 22,
+                      fontWeight: 700,
+                      color: st.text,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1,
+                    }}>
                       {val}
                     </span>
                   )}
@@ -368,100 +442,56 @@ export default function MergeGame() {
           )}
         </div>
 
-        {/* Летящие блоки */}
-        {flyingBlocks.map((fb) => {
-          const s = getBlockStyle(fb.value);
-          // Финальная позиция (top) = padding(8) + targetRow * (cell+gap)
-          const finalTop = 8 + fb.targetRow * (CELL_SIZE + GAP);
-          // Стартовая позиция — за нижней границей доски
-          const startTop = 8 + boardH + CELL_SIZE;
-          const deltaY = finalTop - startTop; // отрицательное — летим вверх
-          return (
-            <div
-              key={fb.id}
-              style={{
-                position: "absolute",
-                left: 8 + fb.col * (CELL_SIZE + GAP),
-                top: startTop,
-                width: CELL_SIZE,
-                height: CELL_SIZE,
-                zIndex: 20,
-                pointerEvents: "none",
-                animation: `flyUp 0.36s cubic-bezier(0.22,1,0.36,1) forwards`,
-                "--delta-y": `${deltaY}px`,
-              } as React.CSSProperties}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 11,
-                  background: s.bg,
-                  border: `1.5px solid ${s.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: `0 4px 16px rgba(0,0,0,0.14)`,
-                }}
-              >
-                <span style={{ fontSize: fb.value >= 100 ? 18 : 24, fontWeight: 700, color: s.text, letterSpacing: "-0.02em" }}>
-                  {fb.value}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+        {/* Летящие блоки (Web Animations API) */}
+        {flyingBlocks.map((fb) => (
+          <FlyBlock
+            key={fb.id}
+            fb={fb}
+            boardPadding={BOARD_PAD}
+            onDone={handleFlyDone}
+          />
+        ))}
 
         {/* Hover-подсветка колонки */}
         {hoverCol !== null && !gameOver && !animating && (
-          <div
-            style={{
-              position: "absolute",
-              top: 8,
-              left: 8 + hoverCol * (CELL_SIZE + GAP),
-              width: CELL_SIZE,
-              height: boardH,
-              borderRadius: 11,
-              background: "rgba(255,255,255,0.07)",
-              border: "2px solid rgba(255,255,255,0.22)",
-              pointerEvents: "none",
-              zIndex: 5,
-            }}
-          />
+          <div style={{
+            position: "absolute",
+            top: BOARD_PAD,
+            left: BOARD_PAD + hoverCol * (CELL_SIZE + GAP),
+            width: CELL_SIZE,
+            height: boardH,
+            borderRadius: 10,
+            background: "rgba(255,255,255,0.07)",
+            border: "2px solid rgba(255,255,255,0.22)",
+            pointerEvents: "none",
+            zIndex: 5,
+          }} />
         )}
 
         {/* Game Over overlay */}
         {gameOver && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: 20,
-              background: "rgba(44,32,23,0.80)",
-              backdropFilter: "blur(6px)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
-              zIndex: 30,
-            }}
-          >
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: 20,
+            background: "rgba(44,32,23,0.82)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+            zIndex: 30,
+          }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#F5F0EB" }}>Поле заполнено</div>
             <div style={{ fontSize: 13, color: "#C8B8A8" }}>Счёт: {score.toLocaleString("ru")}</div>
             <button
               onClick={handleRestart}
               style={{
-                padding: "9px 26px",
-                borderRadius: 12,
-                border: "none",
-                background: "#F5F0EB",
-                color: "#2C2017",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "'Rubik', sans-serif",
-                marginTop: 4,
+                padding: "9px 26px", borderRadius: 12, border: "none",
+                background: "#F5F0EB", color: "#2C2017",
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+                fontFamily: "'Rubik', sans-serif", marginTop: 4,
               }}
             >
               Новая игра
@@ -474,19 +504,14 @@ export default function MergeGame() {
         Нажми на колонку, чтобы бросить блок
       </p>
 
-      {/* CSS */}
       <style>{`
-        @keyframes flyUp {
-          from { transform: translateY(0);                    opacity: 0.6; }
-          to   { transform: translateY(var(--delta-y));       opacity: 1; }
-        }
         @keyframes scorePop {
           0%   { transform: scale(1.3); }
           100% { transform: scale(1); }
         }
         @keyframes mergeFlash {
           0%   { filter: brightness(1.5) saturate(1.4); transform: scale(1.08); }
-          60%  { filter: brightness(1.2) saturate(1.2); transform: scale(1.04); }
+          60%  { filter: brightness(1.2) saturate(1.2); transform: scale(1.03); }
           100% { filter: brightness(1)   saturate(1);   transform: scale(1); }
         }
         * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -503,18 +528,16 @@ function PreviewBlock({ label, value, size, dimmed }: { label: string; value: nu
       <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: "#A89F96", textTransform: "uppercase" }}>
         {label}
       </span>
-      <div
-        style={{
-          width: size, height: size,
-          borderRadius: size * 0.18,
-          background: s.bg,
-          border: `1.5px solid ${s.border}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          opacity: dimmed ? 0.65 : 1,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <span style={{ fontSize: size < 44 ? (value >= 100 ? 12 : 15) : (value >= 100 ? 16 : 22), fontWeight: 700, color: s.text, letterSpacing: "-0.02em" }}>
+      <div style={{
+        width: size, height: size,
+        borderRadius: size * 0.18,
+        background: s.bg,
+        border: `1.5px solid ${s.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: dimmed ? 0.65 : 1,
+        transition: "opacity 0.2s",
+      }}>
+        <span style={{ fontSize: size < 44 ? (value >= 100 ? 11 : 14) : (value >= 100 ? 15 : 22), fontWeight: 700, color: s.text, letterSpacing: "-0.02em" }}>
           {value}
         </span>
       </div>
@@ -522,7 +545,9 @@ function PreviewBlock({ label, value, size, dimmed }: { label: string; value: nu
   );
 }
 
-function ActionBtn({ onClick, disabled, title, children }: { onClick: () => void; disabled?: boolean; title?: string; children: React.ReactNode }) {
+function ActionBtn({ onClick, disabled, title, children }: {
+  onClick: () => void; disabled?: boolean; title?: string; children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
@@ -530,8 +555,7 @@ function ActionBtn({ onClick, disabled, title, children }: { onClick: () => void
       title={title}
       style={{
         width: 34, height: 34,
-        borderRadius: 10,
-        border: "none",
+        borderRadius: 10, border: "none",
         background: disabled ? "#EAE3DA" : "#E0D8CE",
         color: disabled ? "#C5BDB5" : "#4A3F35",
         display: "flex", alignItems: "center", justifyContent: "center",
