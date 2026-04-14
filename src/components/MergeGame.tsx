@@ -328,7 +328,8 @@ export default function MergeGame() {
               const val = grid[r][c];
               const isHov = hoverCol === c;
               const isMerged = mergedCells.has(`${r}-${c}`);
-              const style = val !== EMPTY ? getBlockStyle(val) : null;
+              const isFlying = flyingBlocks.some((fb) => fb.col === c && fb.targetRow === r);
+              const style = (val !== EMPTY && !isFlying) ? getBlockStyle(val) : null;
 
               return (
                 <div
@@ -339,6 +340,7 @@ export default function MergeGame() {
                     borderRadius: 11,
                     background: style ? style.bg : isHov ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)",
                     border: style ? `1.5px solid ${style.border}` : "1.5px solid transparent",
+                    opacity: isFlying ? 0 : 1,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -369,23 +371,24 @@ export default function MergeGame() {
         {/* Летящие блоки */}
         {flyingBlocks.map((fb) => {
           const s = getBlockStyle(fb.value);
-          // Стартует снизу доски, летит до targetRow
-          const targetY = fb.targetRow * (CELL_SIZE + GAP);
-          const startY = boardH + CELL_SIZE; // за нижней границей
+          // Финальная позиция (top) = padding(8) + targetRow * (cell+gap)
+          const finalTop = 8 + fb.targetRow * (CELL_SIZE + GAP);
+          // Стартовая позиция — за нижней границей доски
+          const startTop = 8 + boardH + CELL_SIZE;
+          const deltaY = finalTop - startTop; // отрицательное — летим вверх
           return (
             <div
               key={fb.id}
               style={{
                 position: "absolute",
                 left: 8 + fb.col * (CELL_SIZE + GAP),
-                top: 8,
+                top: startTop,
                 width: CELL_SIZE,
                 height: CELL_SIZE,
                 zIndex: 20,
                 pointerEvents: "none",
-                animation: `flyUp 0.32s cubic-bezier(0.22,1,0.36,1) forwards`,
-                "--start-y": `${startY}px`,
-                "--end-y": `${targetY}px`,
+                animation: `flyUp 0.36s cubic-bezier(0.22,1,0.36,1) forwards`,
+                "--delta-y": `${deltaY}px`,
               } as React.CSSProperties}
             >
               <div
@@ -474,8 +477,8 @@ export default function MergeGame() {
       {/* CSS */}
       <style>{`
         @keyframes flyUp {
-          from { transform: translateY(var(--start-y)); opacity: 0.7; }
-          to   { transform: translateY(var(--end-y));   opacity: 1; }
+          from { transform: translateY(0);                    opacity: 0.6; }
+          to   { transform: translateY(var(--delta-y));       opacity: 1; }
         }
         @keyframes scorePop {
           0%   { transform: scale(1.3); }
