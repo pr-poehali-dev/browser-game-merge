@@ -1,3 +1,6 @@
+// Переключатель: true = показывать цифры на блоках, false = скрыть
+export const SHOW_NUMBERS = false;
+
 export const COLS = 5;
 export const ROWS = 8;
 export const EMPTY = 0;

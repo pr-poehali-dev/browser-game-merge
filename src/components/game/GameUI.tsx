@@ -1,6 +1,6 @@
 import React from "react";
 import Icon from "@/components/ui/icon";
-import { COLS, ROWS, EMPTY, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
+import { COLS, ROWS, EMPTY, CELL_SIZE, GAP, BOARD_PAD, SHOW_NUMBERS, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
 import { FlyBlock, ExplosionEffect, ScorePopupEffect, BlockLabel, SlideBlock } from "./GameEffects";
 
 // ---- Кнопка действия ----
@@ -24,7 +24,7 @@ export function BigCurrentBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
     <div key={value} style={{ width: 64, height: 64, borderRadius: 14, background: s.bg, border: `2px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(0,0,0,0.10)`, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      <span style={{ fontSize: value >= 100 ? 22 : 32, fontWeight: 800, color: s.text, letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</span>
+      {SHOW_NUMBERS && <span style={{ fontSize: value >= 100 ? 22 : 32, fontWeight: 800, color: s.text, letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</span>}
     </div>
   );
 }
@@ -34,7 +34,7 @@ export function NextBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
     <div key={value} style={{ width: 26, height: 26, borderRadius: 7, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.55, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: s.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>
+      {SHOW_NUMBERS && <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: s.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { CELL_SIZE, GAP, BOARD_PAD, ROWS, getBlockStyle, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
+import { CELL_SIZE, GAP, BOARD_PAD, ROWS, SHOW_NUMBERS, getBlockStyle, FlyingBlock, Explosion, ScorePopup, SlideAnim } from "./gameTypes";
 
 // ---- Метка числа на блоке ----
 export function BlockLabel({ value, color }: { value: number; color: string }) {
+  if (!SHOW_NUMBERS) return null;
   return (
     <span style={{ fontSize: value >= 100 ? 15 : value >= 10 ? 20 : 24, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
       {value}
