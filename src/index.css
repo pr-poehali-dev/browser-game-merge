@@ -93,9 +93,19 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Rubik", sans-serif;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
   }
 }
