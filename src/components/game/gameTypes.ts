@@ -1,7 +1,7 @@
 export const COLS = 5;
 export const ROWS = 8;
 export const EMPTY = 0;
-export const MAX_VALUE = 512;
+export const MAX_VALUE = 8192;
 export const SPAWN_VALUES = [2, 4, 8, 16, 32, 64];
 export const CELL_SIZE = 52;
 export const GAP = 5;
@@ -16,7 +16,11 @@ export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: st
   64:  { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
   128: { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
   256: { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
-  512: { bg: "#FCE8F4", text: "#8A2A6A", border: "#F0B0D8", glow: "#E070C0" },
+  512:  { bg: "#FCE8F4", text: "#8A2A6A", border: "#F0B0D8", glow: "#E070C0" },
+  1024: { bg: "#EDE8FB", text: "#4A2A9A", border: "#C8B8F0", glow: "#9070E0" },
+  2048: { bg: "#E8F8EA", text: "#1A6A2A", border: "#A8E0B0", glow: "#50C060" },
+  4096: { bg: "#FFF4E0", text: "#8A5000", border: "#F0D080", glow: "#E0A030" },
+  8192: { bg: "#FFE8E0", text: "#8A2000", border: "#F0B090", glow: "#E05030" },
 };
 
 export function getBlockStyle(v: number) {
