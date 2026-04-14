@@ -46,11 +46,28 @@ function cloneGrid(g: Grid): Grid {
   return g.map((r) => [...r]);
 }
 
+/**
+ * Новая механика слияния:
+ * Когда блок приземляется и совпадает с соседом по вертикали —
+ * сразу проверяем горизонталь этой строки на одинаковые значения.
+ * Все совпадающие соседи (слева и справа) собираются в одну ячейку.
+ * Итог = baseValue * 2^кол-во_участников, очки умножаются на кол-во участников.
+ * После гравитация и повтор.
+ */
+function applyGravity(grid: Grid) {
+  for (let c = 0; c < COLS; c++) {
+    const vals = grid.map((r) => r[c]).filter((v) => v !== EMPTY);
+    const padded = vals.concat(Array(ROWS - vals.length).fill(EMPTY));
+    for (let r = 0; r < ROWS; r++) grid[r][c] = padded[r];
+  }
+}
+
 function dropBlock(
   grid: Grid, col: number, value: number
 ): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number,number][] } {
   const newGrid = cloneGrid(grid);
 
+  // Найти первую свободную строку сверху
   let row = -1;
   for (let r = 0; r < ROWS; r++) {
     if (newGrid[r][col] === EMPTY) { row = r; break; }
@@ -61,46 +78,81 @@ function dropBlock(
 
   let scoreGained = 0;
   const mergedPositions: [number,number][] = [];
-  let merging = true;
-  while (merging) {
-    merging = false;
 
-    for (let c = 0; c < COLS; c++) {
-      for (let r = 0; r < ROWS - 1; r++) {
-        if (newGrid[r][c] !== EMPTY && newGrid[r][c] === newGrid[r + 1][c]) {
-          const merged = newGrid[r][c] * 2;
-          if (merged <= MAX_VALUE) {
-            mergedPositions.push([r, c]);
-            newGrid[r][c] = merged;
-            newGrid[r + 1][c] = EMPTY;
-            scoreGained += merged;
-            merging = true;
-          }
-        }
+  let changed = true;
+  while (changed) {
+    changed = false;
+
+    // Проходим все ячейки и ищем вертикальные пары
+    for (let r = 0; r < ROWS - 1; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const v = newGrid[r][c];
+        if (v === EMPTY) continue;
+        if (newGrid[r + 1][c] !== v) continue;
+
+        // Нашли вертикальную пару (r,c) и (r+1,c).
+        // Собираем всех горизонтальных соседей с тем же значением в строке r
+        const sameRow: number[] = [c]; // колонки с одинаковым значением в строке r
+        let lc = c - 1;
+        while (lc >= 0 && newGrid[r][lc] === v) { sameRow.unshift(lc); lc--; }
+        let rc = c + 1;
+        while (rc < COLS && newGrid[r][rc] === v) { sameRow.push(rc); rc++; }
+
+        // Участников: sameRow.length (строка r) + 1 (строка r+1 в колонке c)
+        const participants = sameRow.length + 1;
+        // Итоговое значение: v * 2^participants
+        const resultValue = v * Math.pow(2, participants);
+        if (resultValue > MAX_VALUE) continue; // не сливаем если превышает лимит
+
+        // Убираем всех участников
+        for (const sc of sameRow) newGrid[r][sc] = EMPTY;
+        newGrid[r + 1][c] = EMPTY;
+
+        // Ставим результат в левую позицию строки r среди участников
+        const targetCol = sameRow[0];
+        newGrid[r][targetCol] = resultValue;
+
+        // Очки = baseScore * participants (множитель)
+        const baseScore = resultValue;
+        scoreGained += baseScore * participants;
+        mergedPositions.push([r, targetCol]);
+
+        applyGravity(newGrid);
+        changed = true;
+        break; // начать цикл заново после гравитации
       }
+      if (changed) break;
     }
 
+    if (changed) continue;
+
+    // Если вертикальных пар не осталось — ищем горизонтальные
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS - 1; c++) {
-        if (newGrid[r][c] !== EMPTY && newGrid[r][c] === newGrid[r][c + 1]) {
-          const merged = newGrid[r][c] * 2;
-          if (merged <= MAX_VALUE) {
-            mergedPositions.push([r, c]);
-            newGrid[r][c] = merged;
-            newGrid[r][c + 1] = EMPTY;
-            scoreGained += merged;
-            merging = true;
-          }
-        }
-      }
-    }
+        const v = newGrid[r][c];
+        if (v === EMPTY) continue;
+        if (newGrid[r][c + 1] !== v) continue;
 
-    if (merging) {
-      for (let c = 0; c < COLS; c++) {
-        const vals = newGrid.map((r) => r[c]).filter((v) => v !== EMPTY);
-        const padded = vals.concat(Array(ROWS - vals.length).fill(EMPTY));
-        for (let r = 0; r < ROWS; r++) newGrid[r][c] = padded[r];
+        // Горизонтальная группа в строке r
+        const group: number[] = [c];
+        let rc2 = c + 1;
+        while (rc2 < COLS && newGrid[r][rc2] === v) { group.push(rc2); rc2++; }
+
+        const participants = group.length;
+        const resultValue = v * Math.pow(2, participants);
+        if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
+
+        for (const gc of group) newGrid[r][gc] = EMPTY;
+        newGrid[r][group[0]] = resultValue;
+
+        scoreGained += resultValue * participants;
+        mergedPositions.push([r, group[0]]);
+
+        applyGravity(newGrid);
+        changed = true;
+        break;
       }
+      if (changed) break;
     }
   }
 
