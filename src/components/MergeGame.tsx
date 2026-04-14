@@ -105,9 +105,9 @@ function dropBlock(
 
         // Участников: sameRow.length (строка r) + 1 (строка r+1 в колонке c)
         const participants = sameRow.length + 1;
-        // Итоговое значение: v * 2^participants
-        const resultValue = v * Math.pow(2, participants);
-        if (resultValue > MAX_VALUE) continue; // не сливаем если превышает лимит
+        // Итоговое значение: всегда v*2, участники сверх 2 дают бонус к очкам
+        const resultValue = v * 2;
+        if (resultValue > MAX_VALUE) continue;
 
         // Убираем всех участников
         for (const sc of sameRow) newGrid[r][sc] = EMPTY;
@@ -117,9 +117,8 @@ function dropBlock(
         const targetCol = sameRow[0];
         newGrid[r][targetCol] = resultValue;
 
-        // Очки = baseScore * participants (множитель)
-        const baseScore = resultValue;
-        const pts = baseScore * participants;
+        // Очки = resultValue * participants (множитель за количество участников)
+        const pts = resultValue * participants;
         scoreGained += pts;
         mergedPositions.push([r, targetCol]);
         mergeEvents.push({ row: r, col: targetCol, resultValue, participants, points: pts });
@@ -146,7 +145,7 @@ function dropBlock(
         while (rc2 < COLS && newGrid[r][rc2] === v) { group.push(rc2); rc2++; }
 
         const participants = group.length;
-        const resultValue = v * Math.pow(2, participants);
+        const resultValue = v * 2;
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
         for (const gc of group) newGrid[r][gc] = EMPTY;
