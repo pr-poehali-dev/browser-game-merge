@@ -56,8 +56,9 @@ export function dropBlock(
 
   newGrid[row][col] = value;
 
-  // Очки: кол-во объединившихся блоков за ход = N, итог = N * N
-  const counter = { blocks: 0 };
+  // Очки: кол-во объединений (операций) за ход = N
+  // 1 объед=1, 2=4, 3=8, 4=16... формула: N=1→1, N>=2→2^N
+  const counter = { merges: 0 };
   const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
   const steps: MergeStep[] = [];
@@ -121,7 +122,7 @@ export function dropBlock(
 
         const destRow = placeInCol(newGrid, targetCol, resultValue);
 
-        counter.blocks += participants; // все участники этой операции
+        counter.merges += 1;
         const ev1: MergeEvent = { row: destRow, col: targetCol, resultValue, participants, points: 0 };
         mergedPositions.push([destRow, targetCol]);
         mergeEvents.push(ev1);
@@ -163,7 +164,7 @@ export function dropBlock(
         for (const gc of group) newGrid[r][gc] = EMPTY;
         const destRow2 = placeInCol(newGrid, targetCol2, resultValue);
 
-        counter.blocks += participants;
+        counter.merges += 1;
         const ev2: MergeEvent = { row: destRow2, col: targetCol2, resultValue, participants, points: 0 };
         mergedPositions.push([destRow2, targetCol2]);
         mergeEvents.push(ev2);
@@ -175,11 +176,10 @@ export function dropBlock(
     }
   }
 
-  // Итоговые очки по таблице:
-  // 2 блока=1, 3=4, 4=8, 5=16, 6=32, 7=64, 8=128, 9=256 ...
-  // Формула: n=2 → 1, n>=3 → 2^(n-1)
-  const n = counter.blocks;
-  const totalScore = n <= 1 ? 0 : n === 2 ? 1 : Math.pow(2, n - 1);
+  // Итоговые очки:
+  // 1 объед=1, 2=4, 3=8, 4=16, 5=32... формула: N=1→1, N>=2→2^N
+  const n = counter.merges;
+  const totalScore = n === 0 ? 0 : n === 1 ? 1 : Math.pow(2, n);
 
   // Распределяем очки по событиям (для всплывающих попапов)
   mergeEvents.forEach((ev, i) => {

@@ -30,7 +30,7 @@ export default function MergeGame() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [slideBlocks, setSlideBlocks] = useState<(SlideAnim & { id: number })[]>([]);
   const [busy, setBusy]               = useState(false);
-  const [liveBlocks, setLiveBlocks]   = useState(0); // живой счётчик объединённых блоков за ход
+  const [liveMerges, setLiveMerges]   = useState(0); // живой счётчик объединений за ход
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
@@ -77,7 +77,7 @@ export default function MergeGame() {
       setGrid(finalGrid);
       setScore(finalScore);
       setSlideBlocks([]);
-      setLiveBlocks(0); // сброс счётчика
+      setLiveMerges(0); // сброс счётчика
       setBusy(false);
 
       if (isBoardFull(finalGrid)) {
@@ -101,7 +101,7 @@ export default function MergeGame() {
         setGrid(step.grid);
         if (step.mergeEvent) {
           showMergeEffects(step.mergeEvent);
-          setLiveBlocks((prev) => prev + step.mergeEvent!.participants);
+          setLiveMerges((prev) => prev + 1);
           if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
         }
         timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -110,7 +110,7 @@ export default function MergeGame() {
       setGrid(step.grid);
       if (step.mergeEvent) {
         showMergeEffects(step.mergeEvent);
-        setLiveBlocks((prev) => prev + step.mergeEvent!.participants);
+        setLiveMerges((prev) => prev + 1);
         if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
       }
       timerRef.current = setTimeout(playNextStep, PAUSE_MS);
@@ -174,7 +174,7 @@ export default function MergeGame() {
     setExplosions([]);
     setScorePopups([]);
     setSlideBlocks([]);
-    setLiveBlocks(0);
+    setLiveMerges(0);
     setBusy(false);
   }, [history, busy]);
 
@@ -191,7 +191,7 @@ export default function MergeGame() {
     setExplosions([]);
     setScorePopups([]);
     setSlideBlocks([]);
-    setLiveBlocks(0);
+    setLiveMerges(0);
     setBusy(false);
   }, []);
 
@@ -211,7 +211,7 @@ export default function MergeGame() {
       <GamePreview current={current} next={next} boardPx={boardPx} />
 
       {/* Живой счётчик множителя */}
-      {liveBlocks > 0 && (
+      {liveMerges > 0 && (
         <div style={{
           marginTop: 8,
           display: "flex",
@@ -223,16 +223,16 @@ export default function MergeGame() {
           animation: "blockAppear 0.15s ease",
         }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", opacity: 0.8 }}>
-            блоков: <b>{liveBlocks}</b>
+            объединений: <b>{liveMerges}</b>
           </span>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>→</span>
           <span style={{
             fontSize: 16,
             fontWeight: 800,
-            color: liveBlocks >= 7 ? "#FFD700" : liveBlocks >= 5 ? "#FFA500" : "#fff",
+            color: liveMerges >= 7 ? "#FFD700" : liveMerges >= 5 ? "#FFA500" : "#fff",
             letterSpacing: "-0.02em",
           }}>
-            {liveBlocks <= 1 ? 0 : liveBlocks === 2 ? 1 : Math.pow(2, liveBlocks - 1)} очков
+            {liveMerges === 0 ? 0 : liveMerges === 1 ? 1 : Math.pow(2, liveMerges)} очков
           </span>
         </div>
       )}
