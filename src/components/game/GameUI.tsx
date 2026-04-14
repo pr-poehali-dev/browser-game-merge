@@ -68,65 +68,24 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
 }
 
 // ---- Превью текущего и следующего ----
-export function GamePreview({ current, next, boardPx, liveMerges, lastScore, lastMerges }: {
-  current: number; next: number; boardPx: number; liveMerges: number; lastScore: number; lastMerges: number;
+export function GamePreview({ current, next, boardPx }: {
+  current: number; next: number; boardPx: number; liveMerges?: number; lastScore?: number; lastMerges?: number;
 }) {
-  // Что показывать: живой счётчик или результат предыдущего хода
-  const isLive = liveMerges > 0;
-  const n = isLive ? liveMerges : lastMerges;
-  const result = n * n;
-  const showFormula = n >= 2;
-  const showPlus1 = n === 1;
-  const show = isLive ? n >= 1 : lastScore > 0;
-
-  const accentColor = isLive
-    ? (n >= 7 ? "#FFD700" : n >= 5 ? "#FF8C00" : "#fff")
-    : "rgba(255,255,255,0.55)";
+  const totalWidth = boardPx + BOARD_PAD * 2;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10, width: boardPx + BOARD_PAD * 2 }}>
+    <div style={{ position: "relative", width: totalWidth, height: 74, marginTop: 10 }}>
 
-      {/* Счёт слева */}
-      <div style={{ minWidth: 80, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
-        {show && showFormula && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", animation: isLive ? "blockAppear 0.15s ease" : undefined }}>
-            {/* N × N = итог */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{n}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.5)", margin: "0 2px" }}>×</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{n}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>=</span>
-              <span style={{ fontSize: 24, fontWeight: 900, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>{result}</span>
-            </div>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 500, marginTop: 3, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              объединений
-            </span>
-          </div>
-        )}
-        {show && showPlus1 && (
-          <div style={{ animation: isLive ? "blockAppear 0.15s ease" : undefined }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>×</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", margin: "0 2px" }}>=</span>
-              <span style={{ fontSize: 24, fontWeight: 900, color: accentColor, letterSpacing: "-0.03em" }}>1</span>
-            </div>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontWeight: 500, marginTop: 3, letterSpacing: "0.06em", textTransform: "uppercase", display: "block", textAlign: "right" }}>
-              объединений
-            </span>
-          </div>
-        )}
+      {/* Текущий блок — по центру */}
+      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 0 }}>
+        <BigCurrentBlock value={current} />
       </div>
 
-      {/* Блоки */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <BigCurrentBlock value={current} />
+      {/* Следующий блок — сильно правее */}
+      <div style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
         <NextBlock value={next} />
       </div>
 
-      {/* Пустое место справа для симметрии */}
-      <div style={{ minWidth: 72 }} />
     </div>
   );
 }
