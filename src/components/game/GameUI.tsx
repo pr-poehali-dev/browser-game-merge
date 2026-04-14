@@ -71,42 +71,53 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
 export function GamePreview({ current, next, boardPx, liveMerges, lastScore }: {
   current: number; next: number; boardPx: number; liveMerges: number; lastScore: number;
 }) {
-  const showScore = lastScore > 0 || liveMerges > 0;
-  const displayScore = liveMerges === 0 ? lastScore : (liveMerges === 1 ? 1 : Math.pow(2, liveMerges));
-  const isLive = liveMerges > 0;
+  // N — объединений, итог = N×N
+  const n = liveMerges > 0 ? liveMerges : 0;
+  const liveResult = n * n;
+  const showScore = liveMerges > 0 || lastScore > 0;
+
+  // Цвет зависит от множителя
+  const accentColor = n >= 7 ? "#FFD700" : n >= 5 ? "#FF8C00" : n >= 3 ? "#fff" : "rgba(255,255,255,0.75)";
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10, width: boardPx + BOARD_PAD * 2 }}>
+
       {/* Счёт слева */}
-      <div style={{
-        minWidth: 64,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        opacity: showScore ? 1 : 0,
-        transition: "opacity 0.2s",
-      }}>
-        {showScore && (
-          <>
-            <span style={{
-              fontSize: 22,
-              fontWeight: 800,
-              color: isLive
-                ? (liveMerges >= 7 ? "#FFD700" : liveMerges >= 5 ? "#FF8C00" : "#fff")
-                : "rgba(255,255,255,0.7)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-              animation: isLive ? "scorePop 0.2s ease" : undefined,
-            }}>
-              +{displayScore}
-            </span>
-            {isLive && liveMerges >= 2 && (
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontWeight: 600, marginTop: 2 }}>
-                ×{liveMerges} объед.
+      <div style={{ minWidth: 72, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center" }}>
+        {showScore && liveMerges > 0 && n >= 2 && (
+          // Живой: показываем N × N = итог
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", animation: "blockAppear 0.15s ease" }}>
+            {/* Формула */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                {n}
               </span>
-            )}
-          </>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", margin: "0 1px" }}>×</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: accentColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                {n}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", margin: "0 2px" }}>=</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: accentColor, letterSpacing: "-0.03em", lineHeight: 1 }}>
+                {liveResult}
+              </span>
+            </div>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", fontWeight: 500, marginTop: 2, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              объединений
+            </span>
+          </div>
+        )}
+        {showScore && liveMerges === 1 && (
+          <div style={{ animation: "blockAppear 0.15s ease" }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.8)", letterSpacing: "-0.02em" }}>+1</span>
+          </div>
+        )}
+        {!liveMerges && lastScore > 0 && (
+          // После хода: показываем итог
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", opacity: 0.65 }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+              +{lastScore}
+            </span>
+          </div>
         )}
       </div>
 
@@ -117,7 +128,7 @@ export function GamePreview({ current, next, boardPx, liveMerges, lastScore }: {
       </div>
 
       {/* Пустое место справа для симметрии */}
-      <div style={{ minWidth: 64 }} />
+      <div style={{ minWidth: 72 }} />
     </div>
   );
 }

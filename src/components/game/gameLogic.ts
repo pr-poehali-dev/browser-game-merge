@@ -176,10 +176,10 @@ export function dropBlock(
     }
   }
 
-  // Итоговые очки:
-  // 1 объед=1, 2=4, 3=8, 4=16, 5=32... формула: N=1→1, N>=2→2^N
+  // Итоговые очки: N объединений → N × N
+  // 1→1, 2→4, 3→9, 4→16, 5→25...
   const n = counter.merges;
-  const totalScore = n === 0 ? 0 : n === 1 ? 1 : Math.pow(2, n);
+  const totalScore = n * n;
 
   // Распределяем очки по событиям (для всплывающих попапов)
   mergeEvents.forEach((ev, i) => {
