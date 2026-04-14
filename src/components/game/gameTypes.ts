@@ -1,5 +1,4 @@
-// Переключатель: true = показывать цифры на блоках, false = скрыть
-export const SHOW_NUMBERS = false;
+export const SHOW_NUMBERS = true;
 
 export const COLS = 5;
 export const ROWS = 8;
@@ -10,60 +9,38 @@ export const CELL_SIZE = 64;
 export const GAP = 5;
 export const BOARD_PAD = 6;
 
-// ---- Цветовая система для тренировки колористов ----
-//
-// Логика: каждый номинал — уникальный hue по цветовому кругу (0-360°).
-// Базовые значения (2-64) — чёткие, далеко разнесённые цвета (шаг ~60°).
-// При каждом удвоении шаг между соседними hue уменьшается вдвое — цвета всё
-// ближе друг к другу, тренируя глаз различать тонкие оттенки.
-//
-// Уровень n = log2(value): hue(n) = BASE_HUE + SUM(step/2^k) для k=1..n
-// Насыщенность постоянная ~80%, светлота ~75% (пастельный фон блока).
-
-// Базовые hue для первых 6 номиналов (цветовой круг)
-// 2=жёлтый, 4=оранжевый, 8=красный, 16=фиолетовый, 32=синий, 64=зелёный
-const BASE_HUES: Record<number, number> = {
-  2:  52,   // жёлтый
-  4:  28,   // оранжевый
-  8:  0,    // красный
-  16: 280,  // фиолетовый
-  32: 220,  // синий
-  64: 120,  // зелёный
+export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string; glow: string }> = {
+  2:    { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE", glow: "#7ADFC8" },
+  4:    { bg: "#EAF0FB", text: "#3A5A9A", border: "#C5D5F0", glow: "#7AABF0" },
+  8:    { bg: "#F5EAF8", text: "#7A3A9A", border: "#E0C5F0", glow: "#D07AF0" },
+  16:   { bg: "#FDF0E8", text: "#9A5A2A", border: "#F0D5C0", glow: "#F0A06A" },
+  32:   { bg: "#FEF0F0", text: "#9A3A3A", border: "#F0C5C5", glow: "#F08080" },
+  64:   { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
+  128:  { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
+  256:  { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
+  512:  { bg: "#FCE8F4", text: "#8A2A6A", border: "#F0B0D8", glow: "#E070C0" },
+  1024: { bg: "#EDE8FB", text: "#4A2A9A", border: "#C8B8F0", glow: "#9070E0" },
+  2048: { bg: "#E8F8EA", text: "#1A6A2A", border: "#A8E0B0", glow: "#50C060" },
+  4096: { bg: "#FFF4E0", text: "#8A5000", border: "#F0D080", glow: "#E0A030" },
+  8192: { bg: "#FFE8E0", text: "#8A2000", border: "#F0B090", glow: "#E05030" },
 };
 
-// Для значений >= 128: интерполяция между предыдущими hue с уменьшающимся шагом
-// Чем больше число — тем меньше разница в hue между соседями
-function computeHue(v: number): number {
-  if (BASE_HUES[v] !== undefined) return BASE_HUES[v];
-  const level = Math.round(Math.log2(v)); // 7=128, 8=256, 9=512...
-  // Начинаем от hue=64 (голубой) и делаем шаги всё меньше
-  // Шаг между уровнями: начальный 30°, делится пополам каждые 2 уровня
-  const baseHue = 120; // от зелёного
-  const step = 30 / Math.pow(2, Math.floor((level - 7) / 2));
-  const direction = (level % 2 === 0) ? 1 : -1;
-  return (baseHue + direction * step * (level - 6) + 360) % 360;
-}
-
-function hslToStyle(h: number, s: number, l: number) {
-  return `hsl(${Math.round(h)}, ${s}%, ${l}%)`;
-}
+const DYNAMIC_PALETTE = [
+  { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE", glow: "#7ADFC8" },
+  { bg: "#EAF0FB", text: "#3A5A9A", border: "#C5D5F0", glow: "#7AABF0" },
+  { bg: "#F5EAF8", text: "#7A3A9A", border: "#E0C5F0", glow: "#D07AF0" },
+  { bg: "#FDF0E8", text: "#9A5A2A", border: "#F0D5C0", glow: "#F0A06A" },
+  { bg: "#FEF0F0", text: "#9A3A3A", border: "#F0C5C5", glow: "#F08080" },
+  { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
+  { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
+  { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
+];
 
 export function getBlockStyle(v: number) {
-  const hue = computeHue(v);
-  // Насыщенность: базовые яркие (70%), при больших числах чуть снижается (сложнее!)
+  if (BLOCK_COLORS[v]) return BLOCK_COLORS[v];
   const level = Math.round(Math.log2(v));
-  const sat = Math.max(40, 72 - (level - 1) * 2); // от 70% до ~40% для огромных чисел
-  // Фон — светлый (85%), бордер — средний (65%), текст — тёмный (25%), glow — насыщенный
-  return {
-    bg:     hslToStyle(hue, sat, 88),
-    border: hslToStyle(hue, sat - 10, 72),
-    text:   hslToStyle(hue, sat - 5, 70),  // почти тот же цвет что фон, едва заметно темнее
-    glow:   hslToStyle(hue, sat + 5, 55),
-  };
+  return DYNAMIC_PALETTE[level % DYNAMIC_PALETTE.length];
 }
-
-// Оставляем для совместимости (не используется напрямую)
-export const BLOCK_COLORS: Record<number, ReturnType<typeof getBlockStyle>> = {};
 
 export type Grid = number[][];
 export type FlyingBlock = { id: number; value: number; col: number; targetRow: number };
@@ -71,14 +48,12 @@ export type Explosion = { id: number; x: number; y: number; color: string };
 export type ScorePopup = { id: number; x: number; y: number; points: number; multiplier: number; color: string };
 export type MergeEvent = { row: number; col: number; resultValue: number; participants: number; points: number };
 
-// Блок скользит из fromCol/fromRow → toCol/toRow
 export type SlideAnim = { value: number; fromCol: number; fromRow: number; toCol: number; toRow: number };
 
-// Один шаг анимации: состояние поля + событие слияния на этом шаге
 export type MergeStep = {
   grid: Grid;
-  mergeEvent: MergeEvent | null; // null = просто упал блок (без слияния)
-  slides: SlideAnim[];           // какие блоки куда скользят на этом шаге
+  mergeEvent: MergeEvent | null;
+  slides: SlideAnim[];
 };
 
 export type PendingResult = {
@@ -87,5 +62,5 @@ export type PendingResult = {
   newScore: number;
   mergedPositions: [number, number][];
   mergeEvents: MergeEvent[];
-  steps: MergeStep[]; // пошаговые снимки для анимации
+  steps: MergeStep[];
 };
