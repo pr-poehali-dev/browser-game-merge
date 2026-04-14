@@ -54,7 +54,7 @@ export function getBlockStyle(v: number) {
   return {
     bg:     hslToStyle(hue, sat, 88),
     border: hslToStyle(hue, sat - 10, 72),
-    text:   hslToStyle(hue, sat + 10, 22),
+    text:   hslToStyle(hue, sat - 5, 70),  // почти тот же цвет что фон, едва заметно темнее
     glow:   hslToStyle(hue, sat + 5, 55),
   };
 }
