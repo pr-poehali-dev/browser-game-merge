@@ -56,10 +56,10 @@ export function dropBlock(
   // Шаг 0: блок упал, слияний ещё нет
   steps.push({ grid: cloneGrid(newGrid), mergeEvent: null, slides: [] });
 
-  // dropCol — столбец броска. Результат первого слияния идёт туда.
-  // Каскадные слияния (не включающие dropCol) остаются на месте.
+  // dropCol — столбец броска.
+  // Правило: если слияние включает dropCol → результат в dropCol.
+  // Если слияние не включает dropCol → результат остаётся в столбце пары.
   const dropCol = col;
-  let firstMergeDone = false; // после первого слияния перестаём тянуть к dropCol
 
   let changed = true;
   while (changed) {
@@ -94,7 +94,7 @@ export function dropBlock(
         // - если это первое слияние и пара включает dropCol → в dropCol
         // - иначе → в столбец c (где нашли пару)
         const pairInvolvesDropCol = rowTop.includes(dropCol) || c === dropCol || rowBot.includes(dropCol);
-        const targetCol = (!firstMergeDone && pairInvolvesDropCol) ? dropCol : c;
+        const targetCol = pairInvolvesDropCol ? dropCol : c;
 
         // Слайды: все участники летят к targetCol
         const slides1: SlideAnim[] = [];
@@ -117,7 +117,6 @@ export function dropBlock(
         mergeEvents.push(ev1);
         steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev1, slides: slides1 });
 
-        if (pairInvolvesDropCol) firstMergeDone = true;
         changed = true;
         break outer;
       }
@@ -142,7 +141,7 @@ export function dropBlock(
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
         const groupInvolvesDropCol = group.includes(dropCol);
-        const targetCol2 = (!firstMergeDone && groupInvolvesDropCol) ? dropCol : group[0];
+        const targetCol2 = groupInvolvesDropCol ? dropCol : group[0];
 
         const slides2: SlideAnim[] = group
           .filter(gc => gc !== targetCol2)
@@ -159,7 +158,6 @@ export function dropBlock(
         mergeEvents.push(ev2);
         steps.push({ grid: cloneGrid(newGrid), mergeEvent: ev2, slides: slides2 });
 
-        if (groupInvolvesDropCol) firstMergeDone = true;
         changed = true;
         break outer2;
       }
