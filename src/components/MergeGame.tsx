@@ -30,9 +30,11 @@ function getBlockStyle(v: number) {
 type Grid = number[][];
 type FlyingBlock = { id: number; value: number; col: number; targetRow: number };
 type Explosion = { id: number; x: number; y: number; color: string };
+type ScorePopup = { id: number; x: number; y: number; points: number; multiplier: number; color: string };
 
 let flyId = 0;
 let explId = 0;
+const popupId = 0;
 
 function emptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
@@ -62,9 +64,11 @@ function applyGravity(grid: Grid) {
   }
 }
 
+type MergeEvent = { row: number; col: number; resultValue: number; participants: number; points: number };
+
 function dropBlock(
   grid: Grid, col: number, value: number
-): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number,number][] } {
+): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number,number][]; mergeEvents: MergeEvent[] } {
   const newGrid = cloneGrid(grid);
 
   // Найти первую свободную строку сверху
@@ -72,12 +76,13 @@ function dropBlock(
   for (let r = 0; r < ROWS; r++) {
     if (newGrid[r][col] === EMPTY) { row = r; break; }
   }
-  if (row === -1) return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [] };
+  if (row === -1) return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [] };
 
   newGrid[row][col] = value;
 
   let scoreGained = 0;
   const mergedPositions: [number,number][] = [];
+  const mergeEvents: MergeEvent[] = [];
 
   let changed = true;
   while (changed) {
@@ -114,8 +119,10 @@ function dropBlock(
 
         // Очки = baseScore * participants (множитель)
         const baseScore = resultValue;
-        scoreGained += baseScore * participants;
+        const pts = baseScore * participants;
+        scoreGained += pts;
         mergedPositions.push([r, targetCol]);
+        mergeEvents.push({ row: r, col: targetCol, resultValue, participants, points: pts });
 
         applyGravity(newGrid);
         changed = true;
@@ -145,8 +152,10 @@ function dropBlock(
         for (const gc of group) newGrid[r][gc] = EMPTY;
         newGrid[r][group[0]] = resultValue;
 
-        scoreGained += resultValue * participants;
+        const pts2 = resultValue * participants;
+        scoreGained += pts2;
         mergedPositions.push([r, group[0]]);
+        mergeEvents.push({ row: r, col: group[0], resultValue, participants, points: pts2 });
 
         applyGravity(newGrid);
         changed = true;
@@ -156,7 +165,7 @@ function dropBlock(
     }
   }
 
-  return { newGrid, scoreGained, placed: true, landRow: row, mergedPositions };
+  return { newGrid, scoreGained, placed: true, landRow: row, mergedPositions, mergeEvents };
 }
 
 function isBoardFull(grid: Grid): boolean {
@@ -237,6 +246,48 @@ function ExplosionEffect({ exp }: { exp: Explosion }) {
   );
 }
 
+// ---- Всплывающий счёт ----
+function ScorePopupEffect({ popup }: { popup: ScorePopup }) {
+  return (
+    <div style={{
+      position: "absolute",
+      left: popup.x,
+      top: popup.y,
+      zIndex: 40,
+      pointerEvents: "none",
+      transform: "translate(-50%, -50%)",
+      animation: "scoreFloat 0.75s ease-out forwards",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 1,
+    }}>
+      <span style={{
+        fontSize: popup.multiplier >= 3 ? 18 : 15,
+        fontWeight: 800,
+        color: popup.color,
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+        textShadow: "0 1px 6px rgba(0,0,0,0.25)",
+      }}>
+        +{popup.points.toLocaleString("ru")}
+      </span>
+      {popup.multiplier >= 2 && (
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: popup.color,
+          opacity: 0.85,
+          letterSpacing: "0.02em",
+          textShadow: "0 1px 4px rgba(0,0,0,0.20)",
+        }}>
+          ×{popup.multiplier}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function BlockLabel({ value, color }: { value: number; color: string }) {
   return (
     <span style={{ fontSize: value >= 100 ? 15 : value >= 10 ? 20 : 24, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -258,8 +309,9 @@ export default function MergeGame() {
   const [gameOver, setGameOver] = useState(false);
   const [flyingBlocks, setFlyingBlocks] = useState<FlyingBlock[]>([]);
   const [explosions, setExplosions] = useState<Explosion[]>([]);
+  const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
 
-  const pendingRef = useRef<{ newGrid: Grid; scoreGained: number; newScore: number; mergedPositions: [number,number][] } | null>(null);
+  const pendingRef = useRef<{ newGrid: Grid; scoreGained: number; newScore: number; mergedPositions: [number,number][]; mergeEvents: MergeEvent[] } | null>(null);
   const animCountRef = useRef(0);
   const prevBest = useRef(best);
   const boardPx = COLS * CELL_SIZE + (COLS - 1) * GAP;
@@ -280,7 +332,7 @@ export default function MergeGame() {
     setGrid(p.newGrid);
     setScore(p.newScore);
 
-    // Взрывы в позициях слияния
+    // Взрывы + всплывающие очки
     if (p.scoreGained > 0 && p.mergedPositions.length > 0) {
       const newExplosions: Explosion[] = p.mergedPositions.map(([r, c]) => {
         const val = p.newGrid[r][c];
@@ -296,6 +348,23 @@ export default function MergeGame() {
       setTimeout(() => {
         setExplosions((prev) => prev.filter((e) => !newExplosions.find((n) => n.id === e.id)));
       }, 500);
+
+      // Всплывающие очки для каждого слияния
+      const newPopups: ScorePopup[] = p.mergeEvents.map((ev) => {
+        const style = getBlockStyle(ev.resultValue);
+        return {
+          id: ++popupId,
+          x: BOARD_PAD + ev.col * (CELL_SIZE + GAP) + CELL_SIZE / 2,
+          y: BOARD_PAD + ev.row * (CELL_SIZE + GAP) + CELL_SIZE / 2,
+          points: ev.points,
+          multiplier: ev.participants,
+          color: style.text,
+        };
+      });
+      setScorePopups((prev) => [...prev, ...newPopups]);
+      setTimeout(() => {
+        setScorePopups((prev) => prev.filter((p) => !newPopups.find((n) => n.id === p.id)));
+      }, 800);
     }
 
     if (isBoardFull(p.newGrid)) {
@@ -320,13 +389,13 @@ export default function MergeGame() {
   const handleDrop = useCallback(
     (col: number) => {
       if (gameOver) return;
-      const { newGrid, scoreGained, placed, landRow, mergedPositions } = dropBlock(grid, col, current);
+      const { newGrid, scoreGained, placed, landRow, mergedPositions, mergeEvents } = dropBlock(grid, col, current);
       if (!placed) return;
 
       setCurrent(next);
       setNext(randomValue());
 
-      pendingRef.current = { newGrid, scoreGained, newScore: score + scoreGained, mergedPositions };
+      pendingRef.current = { newGrid, scoreGained, newScore: score + scoreGained, mergedPositions, mergeEvents };
 
       const fid = ++flyId;
       animCountRef.current += 1;
@@ -343,6 +412,7 @@ export default function MergeGame() {
     setGameOver(false);
     setFlyingBlocks([]);
     setExplosions([]);
+    setScorePopups([]);
     animCountRef.current = 0;
     pendingRef.current = null;
   }, []);
@@ -439,6 +509,11 @@ export default function MergeGame() {
           <ExplosionEffect key={exp.id} exp={exp} />
         ))}
 
+        {/* Всплывающие очки */}
+        {scorePopups.map((popup) => (
+          <ScorePopupEffect key={popup.id} popup={popup} />
+        ))}
+
         {/* Hover-полоска */}
         {hoverCol !== null && !gameOver && (
           <div style={{ position: "absolute", top: BOARD_PAD, left: BOARD_PAD + hoverCol * (CELL_SIZE + GAP), width: CELL_SIZE, height: ROWS * CELL_SIZE + (ROWS - 1) * GAP, borderRadius: 10, background: "rgba(255,255,255,0.07)", border: "2px solid rgba(255,255,255,0.20)", pointerEvents: "none", zIndex: 5 }} />
@@ -461,6 +536,12 @@ export default function MergeGame() {
       </p>
 
       <style>{`
+        @keyframes scoreFloat {
+          0%   { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+          20%  { transform: translate(-50%, -60%) scale(1.15); opacity: 1; }
+          70%  { transform: translate(-50%, -110%) scale(1); opacity: 1; }
+          100% { transform: translate(-50%, -140%) scale(0.9); opacity: 0; }
+        }
         @keyframes blockAppear {
           0%   { transform: scale(0.6); opacity: 0; }
           100% { transform: scale(1);   opacity: 1; }
