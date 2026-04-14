@@ -56,8 +56,8 @@ export function dropBlock(
 
   newGrid[row][col] = value;
 
-  // Очки: кол-во слияний за ход = N, итог = N * N
-  const counter = { merges: 0 };
+  // Очки: кол-во объединившихся блоков за ход = N, итог = N * N
+  const counter = { blocks: 0 };
   const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
   const steps: MergeStep[] = [];
@@ -121,7 +121,7 @@ export function dropBlock(
 
         const destRow = placeInCol(newGrid, targetCol, resultValue);
 
-        counter.merges += 1;
+        counter.blocks += participants; // все участники этой операции
         const ev1: MergeEvent = { row: destRow, col: targetCol, resultValue, participants, points: 0 };
         mergedPositions.push([destRow, targetCol]);
         mergeEvents.push(ev1);
@@ -163,7 +163,7 @@ export function dropBlock(
         for (const gc of group) newGrid[r][gc] = EMPTY;
         const destRow2 = placeInCol(newGrid, targetCol2, resultValue);
 
-        counter.merges += 1;
+        counter.blocks += participants;
         const ev2: MergeEvent = { row: destRow2, col: targetCol2, resultValue, participants, points: 0 };
         mergedPositions.push([destRow2, targetCol2]);
         mergeEvents.push(ev2);
@@ -175,8 +175,8 @@ export function dropBlock(
     }
   }
 
-  // Итоговые очки: N слияний = N * N
-  const n = counter.merges;
+  // Итоговые очки: N объединившихся блоков = N * N
+  const n = counter.blocks;
   const totalScore = n * n;
 
   // Распределяем очки по событиям (для всплывающих попапов)
