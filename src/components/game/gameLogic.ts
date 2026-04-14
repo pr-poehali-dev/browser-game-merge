@@ -20,6 +20,21 @@ export function applyGravity(grid: Grid) {
   }
 }
 
+// Кладёт значение в первую свободную строку столбца col (сверху стека).
+// Возвращает строку куда положили. Если столбец полон — кладёт в строку 0 (крайний случай).
+function placeInCol(grid: Grid, col: number, value: number): number {
+  for (let r = 0; r < ROWS; r++) {
+    if (grid[r][col] === EMPTY) {
+      grid[r][col] = value;
+      return r;
+    }
+  }
+  // Нет свободного места — сдвигаем всё вниз и кладём сверху
+  for (let r = ROWS - 1; r > 0; r--) grid[r][col] = grid[r - 1][col];
+  grid[0][col] = value;
+  return 0;
+}
+
 export function dropBlock(
   grid: Grid, col: number, value: number
 ): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number, number][]; mergeEvents: MergeEvent[] } {
@@ -52,7 +67,6 @@ export function dropBlock(
         if (v === EMPTY) continue;
         if (newGrid[r + 1][c] !== v) continue;
 
-        // Нашли вертикальную пару в (r,c)+(r+1,c).
         // Собираем горизонтальных соседей с тем же значением в строке r
         const sameRow: number[] = [c];
         let lc = c - 1;
@@ -64,19 +78,21 @@ export function dropBlock(
         const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) continue;
 
-        // Убираем всех участников
+        // Убираем всех участников из строки r и нижний блок
         for (const sc of sameRow) newGrid[r][sc] = EMPTY;
         newGrid[r + 1][c] = EMPTY;
 
-        // Результат — в dropCol (столбец последнего броска)
-        newGrid[r][dropCol] = resultValue;
+        // Применяем гравитацию — теперь в dropCol появится свободное место сверху
+        applyGravity(newGrid);
+
+        // Кладём результат на первую свободную строку в dropCol (сверху стека)
+        const destRow = placeInCol(newGrid, dropCol, resultValue);
 
         const pts = resultValue * participants;
         scoreGained += pts;
-        mergedPositions.push([r, dropCol]);
-        mergeEvents.push({ row: r, col: dropCol, resultValue, participants, points: pts });
+        mergedPositions.push([destRow, dropCol]);
+        mergeEvents.push({ row: destRow, col: dropCol, resultValue, participants, points: pts });
 
-        applyGravity(newGrid);
         changed = true;
         break outer;
       }
@@ -101,16 +117,20 @@ export function dropBlock(
         const resultValue = v * Math.pow(2, participants - 1);
         if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
 
+        // Убираем всю группу
         for (const gc of group) newGrid[r][gc] = EMPTY;
-        // Результат — в dropCol
-        newGrid[r][dropCol] = resultValue;
+
+        // Применяем гравитацию — освобождаем место
+        applyGravity(newGrid);
+
+        // Кладём результат на первую свободную строку в dropCol
+        const destRow2 = placeInCol(newGrid, dropCol, resultValue);
 
         const pts2 = resultValue * participants;
         scoreGained += pts2;
-        mergedPositions.push([r, dropCol]);
-        mergeEvents.push({ row: r, col: dropCol, resultValue, participants, points: pts2 });
+        mergedPositions.push([destRow2, dropCol]);
+        mergeEvents.push({ row: destRow2, col: dropCol, resultValue, participants, points: pts2 });
 
-        applyGravity(newGrid);
         changed = true;
         break outer2;
       }
