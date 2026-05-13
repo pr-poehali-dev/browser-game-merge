@@ -52,9 +52,24 @@ export function dropBlock(
   for (let r = 0; r < ROWS; r++) {
     if (newGrid[r][col] === EMPTY) { row = r; break; }
   }
-  if (row === -1) return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [], steps: [] };
 
-  newGrid[row][col] = value;
+  // Столбец полон — но если нижняя ячейка совпадает по значению, разрешаем слияние
+  if (row === -1) {
+    const bottomRow = ROWS - 1;
+    if (newGrid[bottomRow][col] === value) {
+      // Вставляем блок в строку прямо над нижней, сдвигая верхние блоки вверх
+      // Это позволит циклу слияния найти пару (bottomRow-1, bottomRow) с одинаковым значением
+      // Сдвигаем все блоки вверх на 1, чтобы освободить строку ROWS-2 для нового блока
+      for (let r = 0; r < ROWS - 2; r++) newGrid[r][col] = newGrid[r + 1][col];
+      newGrid[ROWS - 2][col] = value;
+      row = ROWS - 2;
+      // newGrid[row][col] уже выставлен выше, пропускаем повторную запись
+    } else {
+      return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [], steps: [] };
+    }
+  } else {
+    newGrid[row][col] = value;
+  }
 
   // Очки: кол-во объединений (операций) за ход = N
   // 1 объед=1, 2=4, 3=8, 4=16... формула: N=1→1, N>=2→2^N
