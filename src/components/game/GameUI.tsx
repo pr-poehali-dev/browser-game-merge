@@ -23,8 +23,8 @@ export function ActionBtn({ onClick, disabled, title, children, small }: {
 export function BigCurrentBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
-    <div key={value} style={{ width: 64, height: 64, borderRadius: 14, background: s.bg, border: `2px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(0,0,0,0.10)`, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      {SHOW_NUMBERS && <span style={{ fontSize: value >= 100 ? 22 : 32, fontWeight: 800, color: s.text, letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</span>}
+    <div key={value} style={{ width: 64, height: 64, borderRadius: 14, background: s.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px rgba(0,0,0,0.30)`, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
+      {SHOW_NUMBERS && <span style={{ fontSize: value >= 100 ? 22 : 32, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</span>}
     </div>
   );
 }
@@ -33,8 +33,8 @@ export function BigCurrentBlock({ value }: { value: number }) {
 export function NextBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
-    <div key={value} style={{ width: 26, height: 26, borderRadius: 7, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.55, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      {SHOW_NUMBERS && <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: s.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>}
+    <div key={value} style={{ width: 26, height: 26, borderRadius: 7, background: s.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
+      {SHOW_NUMBERS && <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>}
     </div>
   );
 }
@@ -46,12 +46,12 @@ export function GameHeader({ score, best, onRefresh, onUndo, canUndo, boardPx }:
   return (
     <div style={{ width: "100%", maxWidth: boardPx + BOARD_PAD * 2 + 16, padding: "10px 8px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, boxSizing: "border-box" }}>
       <div style={{ minWidth: 60 }}>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#777", textTransform: "uppercase", marginBottom: 1 }}>Рекорд</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#222", lineHeight: 1 }}>{best.toLocaleString("ru")}</div>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#888", textTransform: "uppercase", marginBottom: 1 }}>Рекорд</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#ddd", lineHeight: 1 }}>{best.toLocaleString("ru")}</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#777", textTransform: "uppercase", marginBottom: 1 }}>Очки</div>
-        <div key={score} style={{ fontSize: 20, fontWeight: 700, color: "#111", lineHeight: 1, animation: "scorePop 0.22s ease" }}>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.12em", color: "#888", textTransform: "uppercase", marginBottom: 1 }}>Очки</div>
+        <div key={score} style={{ fontSize: 20, fontWeight: 700, color: "#fff", lineHeight: 1, animation: "scorePop 0.22s ease" }}>
           {score.toLocaleString("ru")}
         </div>
       </div>
@@ -111,7 +111,7 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
 
   return (
     <div
-      style={{ marginTop: 14, padding: BOARD_PAD, background: "#B0B0B0", borderRadius: 16, boxShadow: "0 6px 24px rgba(0,0,0,0.15)", position: "relative", overflow: "visible", width: boardPx + BOARD_PAD * 2, flexShrink: 0 }}
+      style={{ marginTop: 14, padding: BOARD_PAD, background: "#222222", borderRadius: 16, boxShadow: "0 6px 32px rgba(0,0,0,0.50)", position: "relative", overflow: "visible", width: boardPx + BOARD_PAD * 2, flexShrink: 0 }}
       onMouseLeave={onMouseLeave}
     >
       {/* Зоны клика */}
@@ -136,11 +136,11 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
             return (
               <div key={`${r}-${c}`} style={{
                 width: CELL_SIZE, height: CELL_SIZE, borderRadius: 10,
-                background: st ? st.bg : isHov ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.18)",
-                border: st ? `1.5px solid ${st.border}` : "1.5px solid rgba(255,255,255,0.10)",
+                background: st ? st.bg : isHov ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+                border: "none",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transition: "background 0.1s",
-                outline: isHov && !st ? "2px solid rgba(255,255,255,0.35)" : "none",
+                outline: "none",
               }}>
                 {st && <BlockLabel value={val} color={st.text} />}
               </div>
@@ -165,7 +165,7 @@ export function GameBoard({ displayGrid, flyingBlocks, explosions, scorePopups, 
 
       {/* Hover-полоска */}
       {hoverCol !== null && !gameOver && (
-        <div style={{ position: "absolute", top: BOARD_PAD, left: BOARD_PAD + hoverCol * (CELL_SIZE + GAP), width: CELL_SIZE, height: boardH, borderRadius: 10, background: "rgba(255,255,255,0.07)", border: "2px solid rgba(255,255,255,0.20)", pointerEvents: "none", zIndex: 5 }} />
+        <div style={{ position: "absolute", top: BOARD_PAD, left: BOARD_PAD + hoverCol * (CELL_SIZE + GAP), width: CELL_SIZE, height: boardH, borderRadius: 10, background: "rgba(255,255,255,0.08)", border: "none", pointerEvents: "none", zIndex: 5 }} />
       )}
 
       {/* Game Over */}

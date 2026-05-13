@@ -40,7 +40,7 @@ export function FlyBlock({ fb, onDone }: { fb: FlyingBlock; onDone: (id: number)
 
   return (
     <div ref={ref} style={{ position: "absolute", left: leftPos, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 20, pointerEvents: "none" }}>
-      <div style={{ width: "100%", height: "100%", borderRadius: 10, background: s.bg, border: `1.5px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 20px rgba(0,0,0,0.18)` }}>
+      <div style={{ width: "100%", height: "100%", borderRadius: 10, background: s.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 20px rgba(0,0,0,0.35)` }}>
         <BlockLabel value={fb.value} color={s.text} />
       </div>
     </div>
@@ -82,9 +82,9 @@ export function SlideBlock({ sl, id, onDone }: { sl: SlideAnim; id: number; onDo
       <div style={{
         width: "100%", height: "100%", borderRadius: 10,
         background: s.bg,
-        border: `2.5px solid ${s.glow}`,
+        border: "none",
         display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: `0 0 18px 4px ${s.glow}99, 0 4px 12px rgba(0,0,0,0.18)`,
+        boxShadow: `0 0 22px 6px ${s.glow}aa, 0 4px 12px rgba(0,0,0,0.35)`,
       }}>
         <BlockLabel value={sl.value} color={s.text} />
       </div>

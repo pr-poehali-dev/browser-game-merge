@@ -9,31 +9,32 @@ export const CELL_SIZE = 64;
 export const GAP = 5;
 export const BOARD_PAD = 6;
 
+// Цвета как на скрине: матовые насыщенные, без каёмки, текст белый
 export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string; glow: string }> = {
-  2:    { bg: "#B8F0E0", text: "#0A5C46", border: "#50D4A8", glow: "#00E5A0" },
-  4:    { bg: "#B0D8FF", text: "#0A3A8A", border: "#4A9EF0", glow: "#2080FF" },
-  8:    { bg: "#D8B0FF", text: "#4A0A8A", border: "#A040F0", glow: "#9020FF" },
-  16:   { bg: "#FFD0A0", text: "#7A3000", border: "#F09030", glow: "#FF8000" },
-  32:   { bg: "#FFB0B0", text: "#8A0A0A", border: "#F04040", glow: "#FF2020" },
-  64:   { bg: "#B8F0A0", text: "#1A5A00", border: "#50D030", glow: "#30D000" },
-  128:  { bg: "#FFF080", text: "#6A5000", border: "#E0C020", glow: "#FFD700" },
-  256:  { bg: "#A0C8FF", text: "#00288A", border: "#3070E0", glow: "#0060FF" },
-  512:  { bg: "#FFB0E8", text: "#8A0060", border: "#F030B0", glow: "#FF00A0" },
-  1024: { bg: "#C8A0FF", text: "#380080", border: "#8030E0", glow: "#7000FF" },
-  2048: { bg: "#90F0B0", text: "#005020", border: "#20C060", glow: "#00CC44" },
-  4096: { bg: "#FFE080", text: "#604000", border: "#D09000", glow: "#FFA000" },
-  8192: { bg: "#FF9090", text: "#700000", border: "#E02020", glow: "#FF0000" },
+  2:    { bg: "#C8A838", text: "#fff", border: "transparent", glow: "#C8A838" }, // жёлтый
+  4:    { bg: "#C87030", text: "#fff", border: "transparent", glow: "#C87030" }, // оранжевый
+  8:    { bg: "#A83030", text: "#fff", border: "transparent", glow: "#A83030" }, // красный
+  16:   { bg: "#5C3A90", text: "#fff", border: "transparent", glow: "#5C3A90" }, // фиолетовый
+  32:   { bg: "#2E5FA8", text: "#fff", border: "transparent", glow: "#2E5FA8" }, // синий
+  64:   { bg: "#2E7A3C", text: "#fff", border: "transparent", glow: "#2E7A3C" }, // зелёный
+  128:  { bg: "#A86820", text: "#fff", border: "transparent", glow: "#A86820" }, // янтарный
+  256:  { bg: "#1E6E8A", text: "#fff", border: "transparent", glow: "#1E6E8A" }, // голубой
+  512:  { bg: "#8A2060", text: "#fff", border: "transparent", glow: "#8A2060" }, // малиновый
+  1024: { bg: "#3A3AA0", text: "#fff", border: "transparent", glow: "#3A3AA0" }, // индиго
+  2048: { bg: "#1E8A4A", text: "#fff", border: "transparent", glow: "#1E8A4A" }, // изумрудный
+  4096: { bg: "#B85018", text: "#fff", border: "transparent", glow: "#B85018" }, // терракота
+  8192: { bg: "#8A1818", text: "#fff", border: "transparent", glow: "#8A1818" }, // тёмно-красный
 };
 
 const DYNAMIC_PALETTE = [
-  { bg: "#B8F0E0", text: "#0A5C46", border: "#50D4A8", glow: "#00E5A0" },
-  { bg: "#B0D8FF", text: "#0A3A8A", border: "#4A9EF0", glow: "#2080FF" },
-  { bg: "#D8B0FF", text: "#4A0A8A", border: "#A040F0", glow: "#9020FF" },
-  { bg: "#FFD0A0", text: "#7A3000", border: "#F09030", glow: "#FF8000" },
-  { bg: "#FFB0B0", text: "#8A0A0A", border: "#F04040", glow: "#FF2020" },
-  { bg: "#B8F0A0", text: "#1A5A00", border: "#50D030", glow: "#30D000" },
-  { bg: "#FFF080", text: "#6A5000", border: "#E0C020", glow: "#FFD700" },
-  { bg: "#A0C8FF", text: "#00288A", border: "#3070E0", glow: "#0060FF" },
+  { bg: "#C8A838", text: "#fff", border: "transparent", glow: "#C8A838" },
+  { bg: "#C87030", text: "#fff", border: "transparent", glow: "#C87030" },
+  { bg: "#A83030", text: "#fff", border: "transparent", glow: "#A83030" },
+  { bg: "#5C3A90", text: "#fff", border: "transparent", glow: "#5C3A90" },
+  { bg: "#2E5FA8", text: "#fff", border: "transparent", glow: "#2E5FA8" },
+  { bg: "#2E7A3C", text: "#fff", border: "transparent", glow: "#2E7A3C" },
+  { bg: "#A86820", text: "#fff", border: "transparent", glow: "#A86820" },
+  { bg: "#1E6E8A", text: "#fff", border: "transparent", glow: "#1E6E8A" },
 ];
 
 export function getBlockStyle(v: number) {

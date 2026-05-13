@@ -250,7 +250,7 @@ export default function MergeGame() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#B8B8B8", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden" }}>
+    <div style={{ minHeight: "100dvh", background: "#2A2A2A", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Rubik', sans-serif", userSelect: "none", paddingBottom: 28, overflowX: "hidden", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E\")" }}>
 
       <GameHeader score={score} best={best} onRefresh={handleHardRefresh} onUndo={handleUndo} canUndo={history.length > 0 && !busy} boardPx={boardPx} />
 
@@ -272,7 +272,7 @@ export default function MergeGame() {
         onFlyDone={handleFlyDone}
       />
 
-      <p style={{ marginTop: 12, fontSize: 11, color: "#B5ADA5", letterSpacing: "0.04em" }}>
+      <p style={{ marginTop: 12, fontSize: 11, color: "#555", letterSpacing: "0.04em" }}>
         Нажми на колонку, чтобы бросить блок
       </p>
 
