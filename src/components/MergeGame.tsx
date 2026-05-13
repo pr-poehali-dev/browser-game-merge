@@ -73,6 +73,8 @@ export default function MergeGame() {
 
   // Показать взрыв и попап для события слияния
   const showMergeEffects = useCallback((ev: MergeEvent) => {
+    navigator.vibrate?.(30);
+
     const style = getBlockStyle(ev.resultValue);
     const x = BOARD_PAD + ev.col * (CELL_SIZE + GAP) + CELL_SIZE / 2;
     const y = BOARD_PAD + ev.row * (CELL_SIZE + GAP) + CELL_SIZE / 2;
