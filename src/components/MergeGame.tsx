@@ -14,14 +14,31 @@ let explId   = 0;
 let popupId  = 0;
 let slideId  = 0;  
 
+const SAVE_KEY = "merge_state_v1";
+
+function loadSave(): { grid: Grid; score: number; current: number; next: number } | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (_) { return null; }
+}
+
+function saveState(grid: Grid, score: number, current: number, next: number) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ grid, score, current, next }));
+  } catch (_) { /* ignore */ }
+}
+
 export default function MergeGame() {
-  const [grid, setGrid]               = useState<Grid>(emptyGrid);
-  const [score, setScore]             = useState(0);
+  const saved = loadSave();
+  const [grid, setGrid]               = useState<Grid>(() => saved?.grid ?? emptyGrid());
+  const [score, setScore]             = useState(() => saved?.score ?? 0);
   const [best, setBest]               = useState<number>(() =>
     parseInt(localStorage.getItem("merge_best") ?? "0", 10)
   );
-  const [current, setCurrent]         = useState<number>(randomValue);
-  const [next, setNext]               = useState<number>(randomValue);
+  const [current, setCurrent]         = useState<number>(() => saved?.current ?? randomValue());
+  const [next, setNext]               = useState<number>(() => saved?.next ?? randomValue());
   const [hoverCol, setHoverCol]       = useState<number | null>(null);
   const [history, setHistory]         = useState<Snapshot[]>([]);
   const [gameOver, setGameOver]       = useState(false);
@@ -33,6 +50,7 @@ export default function MergeGame() {
   const [liveMerges, setLiveMerges]   = useState(0); // живой счётчик объединений (во время хода)
   const [lastMerges, setLastMerges]   = useState(0); // объединений в завершённом ходе
   const [lastScore, setLastScore]     = useState(0); // очки завершённого хода
+  const [mergedCells, setMergedCells] = useState<Set<string>>(new Set()); // "r-c" блоков только что слившихся
 
   const prevBest    = useRef(best);
   const stepsRef    = useRef<MergeStep[]>([]);    // очередь шагов анимации
@@ -40,6 +58,7 @@ export default function MergeGame() {
   const prevScoreRef  = useRef(0);                // счёт до начала хода
   const liveMergesRef = useRef(0);               // ref для доступа в колбэках
   const finalGridRef  = useRef<Grid | null>(null);
+  const nextAfterDropRef = useRef<[number, number]>([current, next]); // [current, next] после броска
   const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const boardPx = COLS * CELL_SIZE + (COLS - 1) * GAP;
@@ -88,6 +107,8 @@ export default function MergeGame() {
       liveMergesRef.current = 0;
       setLiveMerges(0);
       setBusy(false);
+      // Сохраняем прогресс в localStorage
+      saveState(finalGrid, finalScore, nextAfterDropRef.current[0], nextAfterDropRef.current[1]);
 
       if (isBoardFull(finalGrid)) {
         setGameOver(true);
@@ -146,8 +167,10 @@ export default function MergeGame() {
       setHistory((h) => [...h.slice(-19), { grid: cloneGrid(grid), score, current, next }]);
 
       // Сразу меняем current/next — игрок видит следующий блок
+      const newNext = randomValue();
       setCurrent(next);
-      setNext(randomValue());
+      setNext(newNext);
+      nextAfterDropRef.current = [next, newNext];
 
       // Готовим очередь шагов (всё кроме шага 0 — он покажется после посадки)
       // steps[0] — состояние после посадки (без слияния), steps[1..] — каждое слияние
@@ -191,15 +214,19 @@ export default function MergeGame() {
     setSlideBlocks([]);
     setLiveMerges(0);
     setBusy(false);
+    saveState(prev.grid, prev.score, prev.current, prev.next);
   }, [history, busy]);
 
   const handleRestart = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     stepsRef.current = [];
-    setGrid(emptyGrid());
+    const newGrid = emptyGrid();
+    const newCurrent = randomValue();
+    const newNext = randomValue();
+    setGrid(newGrid);
     setScore(0);
-    setCurrent(randomValue());
-    setNext(randomValue());
+    setCurrent(newCurrent);
+    setNext(newNext);
     setHistory([]);
     setGameOver(false);
     setFlyingBlocks([]);
@@ -208,6 +235,7 @@ export default function MergeGame() {
     setSlideBlocks([]);
     setLiveMerges(0);
     setBusy(false);
+    localStorage.removeItem(SAVE_KEY);
   }, []);
 
   const handleHardRefresh = useCallback(() => {
@@ -256,29 +284,41 @@ export default function MergeGame() {
           0%   { transform: scale(0.6); opacity: 0; }
           100% { transform: scale(1);   opacity: 1; }
         }
+        @keyframes mergePulse {
+          0%   { transform: scale(0.5); opacity: 0; box-shadow: 0 0 0px 0px var(--glow-color); }
+          35%  { transform: scale(1.28); opacity: 1; box-shadow: 0 0 28px 10px var(--glow-color); }
+          60%  { transform: scale(0.93); box-shadow: 0 0 12px 4px var(--glow-color); }
+          80%  { transform: scale(1.06); }
+          100% { transform: scale(1); box-shadow: 0 0 0px 0px var(--glow-color); }
+        }
         @keyframes scorePop {
           0%   { transform: scale(1.3); }
           100% { transform: scale(1); }
         }
         @keyframes explosion-ring {
-          0%   { transform: scale(0.2); opacity: 0.7; }
-          100% { transform: scale(1.4); opacity: 0; }
+          0%   { transform: scale(0.1); opacity: 0.9; border-radius: 50%; }
+          60%  { opacity: 0.5; }
+          100% { transform: scale(2.2); opacity: 0; border-radius: 50%; }
+        }
+        @keyframes explosion-ring2 {
+          0%   { transform: scale(0.1); opacity: 0.6; border-radius: 12px; }
+          100% { transform: scale(1.8); opacity: 0; border-radius: 12px; }
         }
         @keyframes particle-0 {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(28px,-28px) scale(0); opacity: 0; }
+          0%   { transform: translate(0,0) scale(1.2); opacity: 1; }
+          100% { transform: translate(44px,-44px) scale(0); opacity: 0; }
         }
         @keyframes particle-1 {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(-28px,-28px) scale(0); opacity: 0; }
+          0%   { transform: translate(0,0) scale(1.2); opacity: 1; }
+          100% { transform: translate(-44px,-44px) scale(0); opacity: 0; }
         }
         @keyframes particle-2 {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(28px,28px) scale(0); opacity: 0; }
+          0%   { transform: translate(0,0) scale(1.2); opacity: 1; }
+          100% { transform: translate(44px,44px) scale(0); opacity: 0; }
         }
         @keyframes particle-3 {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(-28px,28px) scale(0); opacity: 0; }
+          0%   { transform: translate(0,0) scale(1.2); opacity: 1; }
+          100% { transform: translate(-44px,44px) scale(0); opacity: 0; }
         }
         * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
       `}</style>

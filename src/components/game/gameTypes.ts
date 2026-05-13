@@ -10,30 +10,30 @@ export const GAP = 5;
 export const BOARD_PAD = 6;
 
 export const BLOCK_COLORS: Record<number, { bg: string; text: string; border: string; glow: string }> = {
-  2:    { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE", glow: "#7ADFC8" },
-  4:    { bg: "#EAF0FB", text: "#3A5A9A", border: "#C5D5F0", glow: "#7AABF0" },
-  8:    { bg: "#F5EAF8", text: "#7A3A9A", border: "#E0C5F0", glow: "#D07AF0" },
-  16:   { bg: "#FDF0E8", text: "#9A5A2A", border: "#F0D5C0", glow: "#F0A06A" },
-  32:   { bg: "#FEF0F0", text: "#9A3A3A", border: "#F0C5C5", glow: "#F08080" },
-  64:   { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
-  128:  { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
-  256:  { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
-  512:  { bg: "#FCE8F4", text: "#8A2A6A", border: "#F0B0D8", glow: "#E070C0" },
-  1024: { bg: "#EDE8FB", text: "#4A2A9A", border: "#C8B8F0", glow: "#9070E0" },
-  2048: { bg: "#E8F8EA", text: "#1A6A2A", border: "#A8E0B0", glow: "#50C060" },
-  4096: { bg: "#FFF4E0", text: "#8A5000", border: "#F0D080", glow: "#E0A030" },
-  8192: { bg: "#FFE8E0", text: "#8A2000", border: "#F0B090", glow: "#E05030" },
+  2:    { bg: "#B8F0E0", text: "#0A5C46", border: "#50D4A8", glow: "#00E5A0" },
+  4:    { bg: "#B0D8FF", text: "#0A3A8A", border: "#4A9EF0", glow: "#2080FF" },
+  8:    { bg: "#D8B0FF", text: "#4A0A8A", border: "#A040F0", glow: "#9020FF" },
+  16:   { bg: "#FFD0A0", text: "#7A3000", border: "#F09030", glow: "#FF8000" },
+  32:   { bg: "#FFB0B0", text: "#8A0A0A", border: "#F04040", glow: "#FF2020" },
+  64:   { bg: "#B8F0A0", text: "#1A5A00", border: "#50D030", glow: "#30D000" },
+  128:  { bg: "#FFF080", text: "#6A5000", border: "#E0C020", glow: "#FFD700" },
+  256:  { bg: "#A0C8FF", text: "#00288A", border: "#3070E0", glow: "#0060FF" },
+  512:  { bg: "#FFB0E8", text: "#8A0060", border: "#F030B0", glow: "#FF00A0" },
+  1024: { bg: "#C8A0FF", text: "#380080", border: "#8030E0", glow: "#7000FF" },
+  2048: { bg: "#90F0B0", text: "#005020", border: "#20C060", glow: "#00CC44" },
+  4096: { bg: "#FFE080", text: "#604000", border: "#D09000", glow: "#FFA000" },
+  8192: { bg: "#FF9090", text: "#700000", border: "#E02020", glow: "#FF0000" },
 };
 
 const DYNAMIC_PALETTE = [
-  { bg: "#E8F4F0", text: "#3A7A6A", border: "#C5E5DE", glow: "#7ADFC8" },
-  { bg: "#EAF0FB", text: "#3A5A9A", border: "#C5D5F0", glow: "#7AABF0" },
-  { bg: "#F5EAF8", text: "#7A3A9A", border: "#E0C5F0", glow: "#D07AF0" },
-  { bg: "#FDF0E8", text: "#9A5A2A", border: "#F0D5C0", glow: "#F0A06A" },
-  { bg: "#FEF0F0", text: "#9A3A3A", border: "#F0C5C5", glow: "#F08080" },
-  { bg: "#F0F8E8", text: "#4A7A2A", border: "#D0E8B8", glow: "#A0D870" },
-  { bg: "#FFFBE8", text: "#8A7020", border: "#EEE0A0", glow: "#F0D060" },
-  { bg: "#E8EFFA", text: "#2A4A8A", border: "#B0CAF0", glow: "#6090E0" },
+  { bg: "#B8F0E0", text: "#0A5C46", border: "#50D4A8", glow: "#00E5A0" },
+  { bg: "#B0D8FF", text: "#0A3A8A", border: "#4A9EF0", glow: "#2080FF" },
+  { bg: "#D8B0FF", text: "#4A0A8A", border: "#A040F0", glow: "#9020FF" },
+  { bg: "#FFD0A0", text: "#7A3000", border: "#F09030", glow: "#FF8000" },
+  { bg: "#FFB0B0", text: "#8A0A0A", border: "#F04040", glow: "#FF2020" },
+  { bg: "#B8F0A0", text: "#1A5A00", border: "#50D030", glow: "#30D000" },
+  { bg: "#FFF080", text: "#6A5000", border: "#E0C020", glow: "#FFD700" },
+  { bg: "#A0C8FF", text: "#00288A", border: "#3070E0", glow: "#0060FF" },
 ];
 
 export function getBlockStyle(v: number) {
