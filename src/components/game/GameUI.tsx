@@ -33,8 +33,8 @@ export function BigCurrentBlock({ value }: { value: number }) {
 export function NextBlock({ value }: { value: number }) {
   const s = getBlockStyle(value);
   return (
-    <div key={value} style={{ width: 26, height: 26, borderRadius: 7, background: s.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
-      {SHOW_NUMBERS && <span style={{ fontSize: value >= 1000 ? 8 : value >= 100 ? 10 : 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>}
+    <div key={value} style={{ width: 20, height: 20, borderRadius: 5, background: s.bg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.35, animation: "blockAppear 0.18s cubic-bezier(0.34,1.56,0.64,1)", flexShrink: 0 }}>
+      {SHOW_NUMBERS && <span style={{ fontSize: value >= 1000 ? 6 : value >= 100 ? 7 : 9, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</span>}
     </div>
   );
 }
