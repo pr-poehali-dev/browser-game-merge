@@ -1,7 +1,7 @@
 export const SHOW_NUMBERS = true;
 
 export const COLS = 5;
-export const ROWS = 8;
+export const ROWS = 7;
 export const EMPTY = 0;
 export const MAX_VALUE = Infinity;
 export const SPAWN_VALUES = [2, 4, 8, 16, 32, 64];
