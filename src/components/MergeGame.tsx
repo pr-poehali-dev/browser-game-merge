@@ -73,7 +73,8 @@ export default function MergeGame() {
 
   // Показать взрыв и попап для события слияния
   const showMergeEffects = useCallback((ev: MergeEvent) => {
-    navigator.vibrate?.(30);
+    const n = liveMergesRef.current + 1;
+    navigator.vibrate?.(n === 1 ? 25 : n === 2 ? 45 : n === 3 ? 70 : n >= 4 ? [60, 30, 80] : 25);
 
     const style = getBlockStyle(ev.resultValue);
     const x = BOARD_PAD + ev.col * (CELL_SIZE + GAP) + CELL_SIZE / 2;
