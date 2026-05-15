@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent, SlideAnim } from "./game/gameTypes";
-import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull } from "./game/gameLogic";
+import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull, applyGravity } from "./game/gameLogic";
 import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
 type Snapshot = { grid: Grid; score: number; current: number; next: number };
@@ -14,13 +14,15 @@ let explId   = 0;
 let popupId  = 0;
 let slideId  = 0;  
 
-const SAVE_KEY = "merge_state_v3";
+const SAVE_KEY = "merge_state_v4";
 
 function loadSave(): { grid: Grid; score: number; current: number; next: number } | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const saved = JSON.parse(raw);
+    if (saved?.grid) applyGravity(saved.grid);
+    return saved;
   } catch (_) { return null; }
 }
 
