@@ -15,31 +15,21 @@ export function cloneGrid(g: Grid): Grid {
 export function applyGravity(grid: Grid) {
   for (let c = 0; c < COLS; c++) {
     const vals = grid.map((r) => r[c]).filter((v) => v !== EMPTY);
-    const padded = vals.concat(Array(ROWS - vals.length).fill(EMPTY));
+    // Пустые сверху, блоки снизу (гравитация вниз)
+    const padded = Array(ROWS - vals.length).fill(EMPTY).concat(vals);
     for (let r = 0; r < ROWS; r++) grid[r][c] = padded[r];
   }
 }
 
-// Добавляет блок в столбец сверху и применяет гравитацию.
+// Добавляет блок в столбец (падает вниз) и применяет гравитацию.
 // Возвращает итоговую строку где оказался блок.
 function placeInCol(grid: Grid, col: number, value: number): number {
-  // Считаем сколько блоков уже есть в колонке
   const count = grid.filter(row => row[col] !== EMPTY).length;
-  if (count >= ROWS) {
-    // Столбец полон — кладём в строку 0 (будет вытолкнуто)
-    grid[0][col] = value;
-    applyGravity(grid);
-    return 0;
-  }
-  // Новый блок падает сверху: кладём в строку 0, гравитация опустит его на место
-  // Используем временную метку чтобы найти блок после гравитации
-  // Кладём как EMPTY+1 временно — нет, просто считаем позицию
-  // После гравитации блок будет на строке = count (0-indexed сверху)
-  const targetRow = count; // блок займёт строку count (следующая свободная)
+  if (count >= ROWS) return ROWS - 1; // столбец полон, ничего не делаем
+  // После гравитации блок окажется на строке ROWS-1-count (снизу вверх)
+  const targetRow = ROWS - 1 - count;
   grid[targetRow][col] = value;
   applyGravity(grid);
-  // После гравитации найдём где блок (ищем снизу, берём первый = самый нижний свободный)
-  // На самом деле после applyGravity он уже на targetRow т.к. гравитация стабилизирована
   return targetRow;
 }
 
@@ -48,13 +38,13 @@ export function dropBlock(
 ): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number, number][]; mergeEvents: MergeEvent[]; steps: MergeStep[] } {
   const newGrid = cloneGrid(grid);
 
+  // Ищем первую свободную ячейку снизу вверх (гравитация вниз)
   let row = -1;
-  for (let r = 0; r < ROWS; r++) {
+  for (let r = ROWS - 1; r >= 0; r--) {
     if (newGrid[r][col] === EMPTY) { row = r; break; }
   }
 
-  // Столбец полон — но если верхняя занятая ячейка (строка 0) совпадает по значению,
-  // разрешаем слияние: блок «приземляется» на строку 0
+  // Столбец полон — разрешаем только если верхний блок (строка 0) совпадает по значению
   if (row === -1) {
     if (newGrid[0][col] === value) {
       row = 0;
