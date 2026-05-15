@@ -148,7 +148,7 @@ export function dropBlock(
 
         const participants = group.length;
         const resultValue = v * Math.pow(2, participants - 1);
-        if (resultValue > MAX_VALUE) { c = rc2 - 1; continue; }
+        if (resultValue > MAX_VALUE) { c = rc2; continue; }
 
         const groupInvolvesDropCol = group.includes(dropCol);
         // Результат — в dropCol если он в группе, иначе в ближайший к dropCol столбец группы
@@ -190,5 +190,5 @@ export function dropBlock(
 }
 
 export function isBoardFull(grid: Grid): boolean {
-  return grid[ROWS - 1].every((v) => v !== EMPTY);
+  return grid[0].every((v) => v !== EMPTY);
 }

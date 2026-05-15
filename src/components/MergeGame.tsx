@@ -131,6 +131,7 @@ export default function MergeGame() {
       const newSlides = step.slides.map(sl => ({ ...sl, id: ++slideId }));
       setSlideBlocks(newSlides);
       // Ждём завершения скольжения, потом показываем результат слияния
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         setSlideBlocks([]);
         setGrid(step.grid);
@@ -140,6 +141,7 @@ export default function MergeGame() {
           setLiveMerges(liveMergesRef.current);
           if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
         }
+        if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(playNextStep, PAUSE_MS);
       }, SLIDE_MS);
     } else {
@@ -150,6 +152,7 @@ export default function MergeGame() {
         setLiveMerges(liveMergesRef.current);
         if (step.mergeEvent.points > 0) setScore((s) => s + step.mergeEvent!.points);
       }
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(playNextStep, PAUSE_MS);
     }
   }, [showMergeEffects]);
@@ -206,7 +209,12 @@ export default function MergeGame() {
     if (history.length === 0 || busy) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     stepsRef.current = [];
+    liveMergesRef.current = 0;
+    totalScoreRef.current = 0;
+    prevScoreRef.current = 0;
+    finalGridRef.current = null;
     const prev = history[history.length - 1];
+    nextAfterDropRef.current = [prev.current, prev.next];
     setHistory((h) => h.slice(0, -1));
     setGrid(prev.grid);
     setScore(prev.score);
@@ -218,6 +226,8 @@ export default function MergeGame() {
     setScorePopups([]);
     setSlideBlocks([]);
     setLiveMerges(0);
+    setLastScore(0);
+    setLastMerges(0);
     setBusy(false);
     saveState(prev.grid, prev.score, prev.current, prev.next);
   }, [history, busy]);
