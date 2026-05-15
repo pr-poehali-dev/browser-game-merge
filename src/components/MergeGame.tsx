@@ -14,7 +14,7 @@ let explId   = 0;
 let popupId  = 0;
 let slideId  = 0;  
 
-const SAVE_KEY = "merge_state_v1";
+const SAVE_KEY = "merge_state_v3";
 
 function loadSave(): { grid: Grid; score: number; current: number; next: number } | null {
   try {
