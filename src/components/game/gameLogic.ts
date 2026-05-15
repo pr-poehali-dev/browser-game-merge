@@ -53,23 +53,17 @@ export function dropBlock(
     if (newGrid[r][col] === EMPTY) { row = r; break; }
   }
 
-  // Столбец полон — но если нижняя ячейка совпадает по значению, разрешаем слияние
+  // Столбец полон — но если верхняя занятая ячейка (строка 0) совпадает по значению,
+  // разрешаем слияние: блок «приземляется» на строку 0
   if (row === -1) {
-    const bottomRow = ROWS - 1;
-    if (newGrid[bottomRow][col] === value) {
-      // Вставляем блок в строку прямо над нижней, сдвигая верхние блоки вверх
-      // Это позволит циклу слияния найти пару (bottomRow-1, bottomRow) с одинаковым значением
-      // Сдвигаем все блоки вверх на 1, чтобы освободить строку ROWS-2 для нового блока
-      for (let r = 0; r < ROWS - 2; r++) newGrid[r][col] = newGrid[r + 1][col];
-      newGrid[ROWS - 2][col] = value;
-      row = ROWS - 2;
-      // newGrid[row][col] уже выставлен выше, пропускаем повторную запись
+    if (newGrid[0][col] === value) {
+      row = 0;
     } else {
       return { newGrid, scoreGained: 0, placed: false, landRow: -1, mergedPositions: [], mergeEvents: [], steps: [] };
     }
-  } else {
-    newGrid[row][col] = value;
   }
+
+  newGrid[row][col] = value;
 
   // Очки: кол-во объединений (операций) за ход = N
   // 1 объед=1, 2=4, 3=8, 4=16... формула: N=1→1, N>=2→2^N
