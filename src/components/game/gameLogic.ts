@@ -35,7 +35,7 @@ function placeInCol(grid: Grid, col: number, value: number): number {
 
 export function dropBlock(
   grid: Grid, col: number, value: number
-): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergedPositions: [number, number][]; mergeEvents: MergeEvent[]; steps: MergeStep[] } {
+): { newGrid: Grid; scoreGained: number; placed: boolean; landRow: number; mergeEvents: MergeEvent[]; steps: MergeStep[] } {
   const newGrid = cloneGrid(grid);
 
   // Ищем первую свободную ячейку снизу вверх (гравитация вниз)
@@ -58,7 +58,6 @@ export function dropBlock(
   // Очки: кол-во объединений (операций) за ход = N
   // 1 объед=1, 2=4, 3=8, 4=16... формула: N=1→1, N>=2→2^N
   const counter = { merges: 0 };
-  const mergedPositions: [number, number][] = [];
   const mergeEvents: MergeEvent[] = [];
   const steps: MergeStep[] = [];
 
