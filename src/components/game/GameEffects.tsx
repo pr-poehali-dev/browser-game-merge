@@ -11,21 +11,20 @@ export function BlockLabel({ value, color }: { value: number; color: string }) {
   );
 }
 
-// ---- Летящий блок (снизу вверх) ----
+// ---- Летящий блок (сверху вниз) ----
 export function FlyBlock({ fb, onDone }: { fb: FlyingBlock; onDone: (id: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const s = getBlockStyle(fb.value);
-  const boardH = ROWS * (CELL_SIZE + GAP) - GAP;
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const finalTop = BOARD_PAD + fb.targetRow * (CELL_SIZE + GAP);
-    const startTop = BOARD_PAD + boardH + CELL_SIZE + 10;
+    const startTop = BOARD_PAD - CELL_SIZE - 10;
     const deltaY = finalTop - startTop;
     const anim = el.animate(
       [
-        { transform: `translateY(0px)`, opacity: "0.5" },
+        { transform: `translateY(0px)`, opacity: "1" },
         { transform: `translateY(${deltaY}px)`, opacity: "1" },
       ],
       { duration: 320, easing: "cubic-bezier(0.22,1,0.36,1)", fill: "forwards" }
@@ -36,7 +35,7 @@ export function FlyBlock({ fb, onDone }: { fb: FlyingBlock; onDone: (id: number)
   }, []);
 
   const leftPos = BOARD_PAD + fb.col * (CELL_SIZE + GAP);
-  const startTop = BOARD_PAD + (ROWS * (CELL_SIZE + GAP) - GAP) + CELL_SIZE + 10;
+  const startTop = BOARD_PAD - CELL_SIZE - 10;
 
   return (
     <div ref={ref} style={{ position: "absolute", left: leftPos, top: startTop, width: CELL_SIZE, height: CELL_SIZE, zIndex: 20, pointerEvents: "none" }}>
