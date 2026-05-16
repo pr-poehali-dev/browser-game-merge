@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent, SlideAnim } from "./game/gameTypes";
+import { COLS, CELL_SIZE, GAP, BOARD_PAD, getBlockStyle, Grid, FlyingBlock, Explosion, ScorePopup, MergeEvent, MergeStep, SlideAnim } from "./game/gameTypes";
 import { emptyGrid, randomValue, cloneGrid, dropBlock, isBoardFull, applyGravity } from "./game/gameLogic";
 import { GameHeader, GamePreview, GameBoard } from "./game/GameUI";
 
